@@ -1,10 +1,8 @@
 package dev.barabu.base.gl
 
 import android.opengl.GLES20.GL_COMPILE_STATUS
-import android.opengl.GLES20.GL_FRAGMENT_SHADER
 import android.opengl.GLES20.GL_LINK_STATUS
 import android.opengl.GLES20.GL_TRUE
-import android.opengl.GLES20.GL_VERTEX_SHADER
 import android.opengl.GLES20.glAttachShader
 import android.opengl.GLES20.glCompileShader
 import android.opengl.GLES20.glCreateProgram
@@ -19,17 +17,19 @@ import android.opengl.GLES20.glUseProgram
 import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.domain.Model
+import dev.barabu.base.domain.Shader
 
+/**
+ * Базовый класс для программ
+ */
 abstract class ShaderProgram(
     vertexShaderSrc: String,
     fragmentShaderSrc: String
 ) {
 
-//    val programDescriptor: Int by lazy {
-//        build(vertexShaderSrc, fragmentShaderSrc)
-//    }
-
-    val programDescriptor: Int = build(vertexShaderSrc, fragmentShaderSrc)
+    val programDescriptor: Int by lazy {
+        build(vertexShaderSrc, fragmentShaderSrc)
+    }
 
     /**
      * Что рисовать
@@ -52,10 +52,8 @@ abstract class ShaderProgram(
             fragmentShaderSrc: String
         ): Int {
 
-            val vertexShader =
-                compileShader(GL_VERTEX_SHADER, vertexShaderSrc, "vertex")
-            val fragmentShader =
-                compileShader(GL_FRAGMENT_SHADER, fragmentShaderSrc, "fragment")
+            val vertexShader = compileShader(Shader.Vertex, vertexShaderSrc)
+            val fragmentShader = compileShader(Shader.Fragment, fragmentShaderSrc)
             val programDescriptor = linkProgram(vertexShader, fragmentShader)
 
             val linkStatus = IntArray(1)
@@ -66,10 +64,10 @@ abstract class ShaderProgram(
             } else throw RuntimeException("Could not link program.")
         }
 
-        private fun compileShader(type: Int, shaderCode: String, name: String): Int {
+        private fun compileShader(shader: Shader, shaderCode: String): Int {
 
             // Создать объект шейдера в нативном пространстве и получить его дескриптор
-            val shaderDescriptor: Int = glCreateShader(type)
+            val shaderDescriptor: Int = glCreateShader(shader.type)
 
             if (shaderDescriptor == ERROR_CODE) {
                 return INVALID_DESCRIPTOR
@@ -87,7 +85,7 @@ abstract class ShaderProgram(
 
             return if (compileStatus[0] != GL_TRUE) {
                 throw RuntimeException(
-                    "Could not compile $name shader. ${glGetShaderInfoLog(shaderDescriptor)}"
+                    "Could not compile ${shader.desc} shader. ${glGetShaderInfoLog(shaderDescriptor)}"
                 )
             } else {
                 shaderDescriptor

@@ -1,16 +1,19 @@
 package dev.barabu.base.gl
 
-import android.opengl.GLES30.GL_ELEMENT_ARRAY_BUFFER
-import android.opengl.GLES30.GL_STATIC_DRAW
-import android.opengl.GLES30.glBindBuffer
-import android.opengl.GLES30.glBufferData
-import android.opengl.GLES30.glGenBuffers
+import android.opengl.GLES20.GL_ELEMENT_ARRAY_BUFFER
+import android.opengl.GLES20.GL_STATIC_DRAW
+import android.opengl.GLES20.glBindBuffer
+import android.opengl.GLES20.glBufferData
+import android.opengl.GLES20.glGenBuffers
 import dev.barabu.base.BYTES_PER_INT
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+/**
+ * Буфер для индексов вертексов.
+ */
 class ElementBuffer(private val indices: IntArray) {
 
     private val bufferId: Int

@@ -3,22 +3,21 @@ package dev.barabu.base
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.opengl.GLES30.GL_TEXTURE_2D
-import android.opengl.GLES30.GL_LINEAR
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP_NEGATIVE_X
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP_POSITIVE_X
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP_POSITIVE_Y
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP_POSITIVE_Z
-import android.opengl.GLES30.GL_TEXTURE_MAG_FILTER
-import android.opengl.GLES30.GL_TEXTURE_MIN_FILTER
-import android.opengl.GLES30.glBindTexture
-import android.opengl.GLES30.glDeleteTextures
-import android.opengl.GLES30.glGenTextures
-import android.opengl.GLES30.glTexParameteri
-import android.opengl.GLES30
+import android.opengl.GLES20
+import android.opengl.GLES20.GL_LINEAR
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_X
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+import android.opengl.GLES20.GL_TEXTURE_MAG_FILTER
+import android.opengl.GLES20.GL_TEXTURE_MIN_FILTER
+import android.opengl.GLES20.glBindTexture
+import android.opengl.GLES20.glDeleteTextures
+import android.opengl.GLES20.glGenTextures
+import android.opengl.GLES20.glTexParameteri
 import android.opengl.GLUtils
 import androidx.annotation.DrawableRes
 
@@ -102,25 +101,25 @@ object TextureLoader {
         }.getOrNull()
 
         if (bitmap == null) {
-            GLES30.glDeleteTextures(1, texDescriptor, 0)
+            GLES20.glDeleteTextures(1, texDescriptor, 0)
             return INVALID_DESCRIPTOR
         }
 
         // Привязываем текстуру к таргету GL_TEXTURE_2D.
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texDescriptor[0])
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texDescriptor[0])
 
         // Применяем фильтры к таргету (то есть к нашей текстуре, потому что она привязана к таргету)
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
 
         // Заливаем картинку в текстуру
-        GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0)
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         bitmap.recycle()
 
         // Генерим Mipmap'ы в нашем таргете (из картинки нашей текстуры)
-        GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D)
+        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D)
 
         // Освобождаем таргет
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
 
         return texDescriptor[0]
     }

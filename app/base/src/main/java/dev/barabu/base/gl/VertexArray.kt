@@ -11,10 +11,7 @@ import dev.barabu.base.Logging
  *
  * ref: https://learnopengl.com/Getting-started/Hello-Triangle
  */
-class VertexArray(
-    private val vertexBuffer: VertexBuffer,
-    private val elementBuffer: ElementBuffer?
-) {
+class VertexArray(private val vertexBuffer: VertexBuffer, elementBuffer: ElementBuffer?) {
 
     private val arrayId: Int
 

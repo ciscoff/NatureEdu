@@ -1,15 +1,15 @@
 package dev.barabu.nature.mountains.gl
 
 import android.content.Context
-import android.opengl.GLES30.glUseProgram
-import android.opengl.GLES30.GL_TEXTURE0
-import android.opengl.GLES30.GL_TEXTURE_CUBE_MAP
-import android.opengl.GLES30.glActiveTexture
-import android.opengl.GLES30.glBindTexture
-import android.opengl.GLES30.glUniform1i
-import android.opengl.GLES30.glUniformMatrix4fv
-import android.opengl.GLES30.glGetAttribLocation
-import android.opengl.GLES30.glGetUniformLocation
+import android.opengl.GLES20.GL_TEXTURE0
+import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP
+import android.opengl.GLES20.glActiveTexture
+import android.opengl.GLES20.glBindTexture
+import android.opengl.GLES20.glGetAttribLocation
+import android.opengl.GLES20.glGetUniformLocation
+import android.opengl.GLES20.glUniform1i
+import android.opengl.GLES20.glUniformMatrix4fv
+import android.opengl.GLES20.glUseProgram
 import dev.barabu.base.Logging
 import dev.barabu.base.TextResourceReader
 import dev.barabu.base.domain.Attribute
@@ -44,6 +44,7 @@ class SkyboxShaderProgram(
      * Загрузить матрицу из массива в нативный uniform нашей программы.
      */
     fun bindMatrixUniform(matrix: FloatArray) {
+        Logging.d("$TAG.bindMatrixUniform")
         glUniformMatrix4fv(uMatrixDescriptor, 1, false, matrix, 0)
     }
 
@@ -53,6 +54,7 @@ class SkyboxShaderProgram(
      * текстуры из [texDescriptor] с потребителем [uTexDescriptor] в шейдере.
      */
     fun bindTexUniform(texDescriptor: Int) {
+        Logging.d("$TAG.bindTexUniform")
         // Делаем активным texture unit 0 и следующая операция отработает на активном texture unit.
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_CUBE_MAP, texDescriptor)

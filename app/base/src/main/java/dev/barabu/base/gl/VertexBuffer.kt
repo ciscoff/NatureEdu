@@ -1,14 +1,14 @@
 package dev.barabu.base.gl
 
-import android.opengl.GLES30.GL_ARRAY_BUFFER
-import android.opengl.GLES30.GL_FLOAT
-import android.opengl.GLES30.GL_STATIC_DRAW
-import android.opengl.GLES30.glBindBuffer
-import android.opengl.GLES30.glBufferData
-import android.opengl.GLES30.glEnableVertexAttribArray
-import android.opengl.GLES30.glGenBuffers
-import android.opengl.GLES30.glVertexAttribPointer
-import android.opengl.GLES30
+import android.opengl.GLES20.GL_ARRAY_BUFFER
+import android.opengl.GLES20.GL_FLOAT
+import android.opengl.GLES20.GL_STATIC_DRAW
+import android.opengl.GLES20.glBindBuffer
+import android.opengl.GLES20.glBufferData
+import android.opengl.GLES20.glEnableVertexAttribArray
+import android.opengl.GLES20.glGenBuffers
+import android.opengl.GLES20.glVertexAttribPointer
+import android.opengl.GLES20
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging

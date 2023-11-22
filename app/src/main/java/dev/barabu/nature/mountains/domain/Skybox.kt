@@ -1,8 +1,8 @@
 package dev.barabu.nature.mountains.domain
 
-import android.opengl.GLES30.GL_TRIANGLES
-import android.opengl.GLES30.GL_UNSIGNED_INT
-import android.opengl.GLES30.glDrawElements
+import android.opengl.GLES20.GL_TRIANGLES
+import android.opengl.GLES20.GL_UNSIGNED_INT
+import android.opengl.GLES20.glDrawElements
 import dev.barabu.base.Logging
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
@@ -39,6 +39,7 @@ class Skybox : Model {
     }
 
     override fun draw() {
+        Logging.d("$TAG.draw")
         vertexArray.bind()
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0)
         vertexArray.release()
