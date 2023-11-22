@@ -8,7 +8,6 @@ import android.opengl.GLES20.glBufferData
 import android.opengl.GLES20.glEnableVertexAttribArray
 import android.opengl.GLES20.glGenBuffers
 import android.opengl.GLES20.glVertexAttribPointer
-import android.opengl.GLES20
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging

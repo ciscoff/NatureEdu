@@ -6,6 +6,9 @@ varying vec3 v_Position;
 
 void main() {
     v_Position = a_Position;
+
+    // Находясь внутри куба мы будем видеть "внешнюю" поверхность каждой его стороны.
+    // Иначе будем видеть внутреннюю поверхность, которая есть зеркальное отражение внешней.
     v_Position.z = -v_Position.z;
     gl_Position = u_Matrix * vec4(a_Position, 1.0);
 

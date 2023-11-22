@@ -16,31 +16,31 @@ import android.opengl.GLES20.glEnable
 import android.opengl.GLES20.glViewport
 import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
+import android.opengl.Matrix.multiplyMM
+import android.opengl.Matrix.rotateM
+import android.opengl.Matrix.setIdentityM
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.base.TextureLoader
-import dev.barabu.base.geometry.Point
 import dev.barabu.nature.R
-import dev.barabu.nature.mountains.domain.Skybox
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class MountainsRenderer(private val context: Context): Renderer {
+class MountainsRenderer(private val context: Context) : Renderer {
 
-    private lateinit var shaderProgram: SkyboxShaderProgram
+    private lateinit var skyboxShaderProgram: SkyboxShaderProgram
 
-    private val cubeMMatrix = FloatArray(16)
-    private val cubeVMatrix = FloatArray(16)
-    private val cubePMatrix = FloatArray(16)
-    private val cubeVPMatrix = FloatArray(16)
-    private val cubeRotationMatrix = FloatArray(16)
-    private val cubeMVPMatrix = FloatArray(16)
-    private val invertedCubeVPMatrix = FloatArray(16)
+    private val skyMMatrix = FloatArray(16)
+    private val skyVMatrix = FloatArray(16)
+    private val skyPMatrix = FloatArray(16)
+    private val skyVPMatrix = FloatArray(16)
+    private val skyMVPMatrix = FloatArray(16)
 
     // Descriptor нативного буфера с битмапой
     private var skyTexDescriptor: Int = INVALID_DESCRIPTOR
 
-    private var cubeCenter = Point(0f, 0f, 0f)
+    private var xRotation: Float = 0f
+    private var yRotation: Float = 0f
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         glClearColor(0.9f, 0.9f, 0.9f, 1f)
@@ -55,7 +55,7 @@ class MountainsRenderer(private val context: Context): Renderer {
             )
         )
 
-        shaderProgram = SkyboxShaderProgram(context)
+        skyboxShaderProgram = SkyboxShaderProgram(context)
 
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе к камере.
         glEnable(GL_DEPTH_TEST)
@@ -73,58 +73,59 @@ class MountainsRenderer(private val context: Context): Renderer {
             return
         }
 
-        Matrix.setIdentityM(cubeRotationMatrix, 0)
-
         // Определяем перспективу
         updateProjectionMatrix(width.toFloat() / height.toFloat())
-
-        // Позиция и направление камеры
-        Matrix.setLookAtM(cubeVMatrix, 0, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 1f, 0f)
     }
 
     override fun onDrawFrame(p0: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
-        // кэшируем результат умножения (PMatrix * VMatrix) в VPMatrix
-        Matrix.multiplyMM(cubeVPMatrix, 0, cubePMatrix, 0, cubeVMatrix, 0)
+        setupCameraPosition()
 
-        // сразу делаем инвертированную viewProjectionMatrix
-        /*Matrix.invertM(invertedCubeVPMatrix, 0, cubeVPMatrix, 0)*/
+        setupSkyPosition()
+        drawSky()
+    }
 
-        positionCubeInWorld(cubeCenter)
-        drawCube()
+    fun handleTouchDrag(dX: Float, dY: Float) {
+        Logging.d("$TAG.handleTouchDrag")
+
+        xRotation += dX / 16f
+        yRotation += dY / 16f
+
+        if (yRotation < -90f) {
+            yRotation = -90f
+        } else if (yRotation > 90) {
+            yRotation = 90f
+        }
     }
 
     private fun updateProjectionMatrix(aspectRatio: Float) {
         Logging.d("$TAG.updateProjectionMatrix")
-        Matrix.perspectiveM(cubePMatrix, 0, 90f, aspectRatio, 1f, 10f)
+        Matrix.perspectiveM(skyPMatrix, 0, 90f, aspectRatio, 1f, 10f)
     }
 
-    private fun positionCubeInWorld(center: Point) {
-        /*val tempM = FloatArray(16)*/
-
-        Matrix.setIdentityM(cubeMMatrix, 0)
-        /*Matrix.translateM(cubeMMatrix, 0, center.x, center.y, center.z)*/
-
-        // Apply transformations: rotation first, translation last
-        /*Matrix.multiplyMM(
-            tempM,
-            0,
-            cubeMMatrix,
-            0,
-            cubeRotationMatrix,
-            0
-        )*/
-
-        Matrix.multiplyMM(
-            cubeMVPMatrix, 0, cubeVPMatrix, 0, cubeMMatrix, 0
-        )
+    /**
+     * Позиционируем камеру с учетом накопленного поворота тачем.
+     */
+    private fun setupCameraPosition() {
+        setIdentityM(skyVMatrix, 0)
+        rotateM(skyVMatrix, 0, -yRotation, 1f, 0f, 0f)
+        rotateM(skyVMatrix, 0, -xRotation, 0f, 1f, 0f)
+        multiplyMM(skyVPMatrix, 0, skyPMatrix, 0, skyVMatrix, 0)
     }
 
-    private fun drawCube() {
-        shaderProgram.apply {
+    private fun setupSkyPosition() {
+        setIdentityM(skyMMatrix, 0)
+        multiplyMM(skyMVPMatrix, 0, skyVPMatrix, 0, skyMMatrix, 0)
+    }
+
+    /**
+     * Привязка униформов выполняется на АКТИВНОЙ программе.
+     */
+    private fun drawSky() {
+        skyboxShaderProgram.apply {
             useProgram()
-            bindMatrixUniform(cubeMVPMatrix)
+            bindMatrixUniform(skyMVPMatrix)
             bindTexUniform(skyTexDescriptor)
             draw()
         }
