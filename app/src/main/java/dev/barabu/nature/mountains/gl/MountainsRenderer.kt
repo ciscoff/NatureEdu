@@ -3,8 +3,10 @@ package dev.barabu.nature.mountains.gl
 import android.content.Context
 import android.opengl.GLES20.GL_BLEND
 import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
+import android.opengl.GLES20.GL_CULL_FACE
 import android.opengl.GLES20.GL_DEPTH_BUFFER_BIT
 import android.opengl.GLES20.GL_DEPTH_TEST
+import android.opengl.GLES20.GL_LEQUAL
 import android.opengl.GLES20.GL_LESS
 import android.opengl.GLES20.GL_ONE_MINUS_SRC_ALPHA
 import android.opengl.GLES20.GL_SRC_ALPHA
@@ -18,7 +20,9 @@ import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
 import android.opengl.Matrix.multiplyMM
 import android.opengl.Matrix.rotateM
+import android.opengl.Matrix.scaleM
 import android.opengl.Matrix.setIdentityM
+import android.opengl.Matrix.translateM
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.base.TextureLoader
@@ -28,13 +32,17 @@ import javax.microedition.khronos.opengles.GL10
 
 class MountainsRenderer(private val context: Context) : Renderer {
 
-    private lateinit var skyboxShaderProgram: SkyboxShaderProgram
+    private lateinit var skyboxProgram: SkyboxProgram
+    private lateinit var heightmapProgram: HeightmapProgram
 
-    private val skyMMatrix = FloatArray(16)
-    private val skyVMatrix = FloatArray(16)
-    private val skyPMatrix = FloatArray(16)
-    private val skyVPMatrix = FloatArray(16)
-    private val skyMVPMatrix = FloatArray(16)
+    private val tempMatrix = FloatArray(16)
+
+    private val modelMatrix = FloatArray(16)
+    private val viewMatrix = FloatArray(16)
+    private val projectionMatrix = FloatArray(16)
+    private val modelViewProjectionMatrix = FloatArray(16)
+
+    private val viewMatrixForSky = FloatArray(16)
 
     // Descriptor нативного буфера с битмапой
     private var skyTexDescriptor: Int = INVALID_DESCRIPTOR
@@ -43,7 +51,7 @@ class MountainsRenderer(private val context: Context) : Renderer {
     private var yRotation: Float = 0f
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
-        glClearColor(0.9f, 0.9f, 0.9f, 1f)
+        glClearColor(1f, 1f, 1f, 1f)
 
         // Текстура Skybox
         skyTexDescriptor = TextureLoader.loadCubeMap(
@@ -55,15 +63,18 @@ class MountainsRenderer(private val context: Context) : Renderer {
             )
         )
 
-        skyboxShaderProgram = SkyboxShaderProgram(context)
+        skyboxProgram = SkyboxProgram(context)
+        heightmapProgram = HeightmapProgram(context, R.drawable.heighmap)
 
-        // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе к камере.
+        // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LESS)
 
         // Поддержка transparency в текстурах (PNG например)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        glEnable(GL_CULL_FACE)
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -72,17 +83,15 @@ class MountainsRenderer(private val context: Context) : Renderer {
         if (width == 0 || height == 0) {
             return
         }
-
         // Определяем перспективу
         updateProjectionMatrix(width.toFloat() / height.toFloat())
+        // Обновляем камеры
+        updateViewMatrices()
     }
 
     override fun onDrawFrame(p0: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-
-        setupCameraPosition()
-
-        setupSkyPosition()
+        drawHeightmap()
         drawSky()
     }
 
@@ -92,43 +101,71 @@ class MountainsRenderer(private val context: Context) : Renderer {
         xRotation += dX / 16f
         yRotation += dY / 16f
 
-        if (yRotation < -90f) {
-            yRotation = -90f
+        if (yRotation < -20f) {
+            yRotation = -20f
         } else if (yRotation > 90) {
             yRotation = 90f
         }
+        updateViewMatrices()
     }
 
-    private fun updateProjectionMatrix(aspectRatio: Float) {
-        Logging.d("$TAG.updateProjectionMatrix")
-        Matrix.perspectiveM(skyPMatrix, 0, 90f, aspectRatio, 1f, 10f)
-    }
-
-    /**
-     * Позиционируем камеру с учетом накопленного поворота тачем.
-     */
-    private fun setupCameraPosition() {
-        setIdentityM(skyVMatrix, 0)
-        rotateM(skyVMatrix, 0, -yRotation, 1f, 0f, 0f)
-        rotateM(skyVMatrix, 0, -xRotation, 0f, 1f, 0f)
-        multiplyMM(skyVPMatrix, 0, skyPMatrix, 0, skyVMatrix, 0)
-    }
-
-    private fun setupSkyPosition() {
-        setIdentityM(skyMMatrix, 0)
-        multiplyMM(skyMVPMatrix, 0, skyVPMatrix, 0, skyMMatrix, 0)
+    private fun drawHeightmap() {
+        setIdentityM(modelMatrix, 0)
+        scaleM(modelMatrix, 0, 100f, 10f, 100f)
+        updateMvpMatrix()
+        heightmapProgram.apply {
+            useProgram()
+            bindMatrixUniform(modelViewProjectionMatrix)
+            draw()
+        }
     }
 
     /**
      * Привязка униформов выполняется на АКТИВНОЙ программе.
      */
     private fun drawSky() {
-        skyboxShaderProgram.apply {
+        setIdentityM(modelMatrix, 0)
+        updateSkyMvpMatrix()
+        glDepthFunc(GL_LEQUAL)
+        skyboxProgram.apply {
             useProgram()
-            bindMatrixUniform(skyMVPMatrix)
+            bindMatrixUniform(modelViewProjectionMatrix)
             bindTexUniform(skyTexDescriptor)
             draw()
         }
+    }
+
+    /**
+     * Используем две камеры - одна для Sky, вторая для Heightmap.
+     * Позиционируем их с учетом накопленного поворота касанием.
+     * - Для Sky учитываем только вращение.
+     * - Для Heightmap ДОБАВЛЯЕМ смещение.
+     */
+    private fun updateViewMatrices() {
+        setIdentityM(viewMatrix, 0)
+
+        rotateM(viewMatrix, 0, -yRotation, 1f, 0f, 0f)
+        rotateM(viewMatrix, 0, -xRotation, 0f, 1f, 0f)
+
+        // Для Sky сохраняем только вращение
+        System.arraycopy(viewMatrix, 0, viewMatrixForSky, 0, viewMatrix.size)
+
+        // Для Heightmap еще добавляем translate
+        translateM(viewMatrix, 0, 0f, -2.5f, -5f)
+    }
+
+    private fun updateProjectionMatrix(aspectRatio: Float) {
+        Matrix.perspectiveM(projectionMatrix, 0, 45f, aspectRatio, 1f, 100f)
+    }
+
+    private fun updateMvpMatrix() {
+        multiplyMM(tempMatrix, 0, viewMatrix, 0, modelMatrix, 0)
+        multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
+    }
+
+    private fun updateSkyMvpMatrix() {
+        multiplyMM(tempMatrix, 0, viewMatrixForSky, 0, modelMatrix, 0)
+        multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
     }
 
     companion object {

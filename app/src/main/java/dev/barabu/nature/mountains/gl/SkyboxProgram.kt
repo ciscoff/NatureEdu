@@ -18,7 +18,7 @@ import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
 import dev.barabu.nature.mountains.domain.Skybox
 
-class SkyboxShaderProgram(
+class SkyboxProgram(
     context: Context,
     vertexShaderResourceId: Int = R.raw.skybox_vertex_shader,
     fragmentShaderResourceId: Int = R.raw.skybox_fragment_shader
@@ -73,7 +73,7 @@ class SkyboxShaderProgram(
 
     companion object {
 
-        private const val TAG = "SkyboxShaderProgram"
+        private const val TAG = "SkyboxProgram"
 
         private const val A_POSITION = "a_Position"
         private const val U_MATRIX = "u_Matrix"
