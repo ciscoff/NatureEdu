@@ -3,8 +3,8 @@ package dev.barabu.base
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.opengl.GLES20
 import android.opengl.GLES20.GL_LINEAR
+import android.opengl.GLES20.GL_TEXTURE_2D
 import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP
 import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_X
 import android.opengl.GLES20.GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
@@ -17,6 +17,7 @@ import android.opengl.GLES20.GL_TEXTURE_MIN_FILTER
 import android.opengl.GLES20.glBindTexture
 import android.opengl.GLES20.glDeleteTextures
 import android.opengl.GLES20.glGenTextures
+import android.opengl.GLES20.glGenerateMipmap
 import android.opengl.GLES20.glTexParameteri
 import android.opengl.GLUtils
 import androidx.annotation.DrawableRes
@@ -101,25 +102,25 @@ object TextureLoader {
         }.getOrNull()
 
         if (bitmap == null) {
-            GLES20.glDeleteTextures(1, texDescriptor, 0)
+            glDeleteTextures(1, texDescriptor, 0)
             return INVALID_DESCRIPTOR
         }
 
         // Привязываем текстуру к таргету GL_TEXTURE_2D.
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texDescriptor[0])
+        glBindTexture(GL_TEXTURE_2D, texDescriptor[0])
 
         // Применяем фильтры к таргету (то есть к нашей текстуре, потому что она привязана к таргету)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
         // Заливаем картинку в текстуру
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+        GLUtils.texImage2D(GL_TEXTURE_2D, 0, bitmap, 0)
         bitmap.recycle()
 
         // Генерим Mipmap'ы в нашем таргете (из картинки нашей текстуры)
-        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D)
+        glGenerateMipmap(GL_TEXTURE_2D)
 
         // Освобождаем таргет
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        glBindTexture(GL_TEXTURE_2D, 0)
 
         return texDescriptor[0]
     }

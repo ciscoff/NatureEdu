@@ -54,14 +54,14 @@ class Skybox : Model {
         /** 8 вершин куба */
         private val vertices = floatArrayOf(
 
-            -2f, 2f, 2f, // (0) Top-left near
-            2f, 2f, 2f, // (1) Top-right near
-            -2f, -2f, 2f, // (2) Bottom-left near
-            2f, -2f, 2f, // (3) Bottom-right near
-            -2f, 2f, -2f, // (4) Top-left far
-            2f, 2f, -2f, // (5) Top-right far
-            -2f, -2f, -2f, // (6) Bottom-left far
-            2f, -2f, -2f // (7) Bottom-right far
+            -1f, 1f, 1f, // (0) Top-left near
+            1f, 1f, 1f, // (1) Top-right near
+            -1f, -1f, 1f, // (2) Bottom-left near
+            1f, -1f, 1f, // (3) Bottom-right near
+            -1f, 1f, -1f, // (4) Top-left far
+            1f, 1f, -1f, // (5) Top-right far
+            -1f, -1f, -1f, // (6) Bottom-left far
+            1f, -1f, -1f // (7) Bottom-right far
         )
 
         private val indices = intArrayOf(
