@@ -1,6 +1,5 @@
 package dev.barabu.base
 
-
 const val INVALID_DESCRIPTOR = 0
 const val ERROR_CODE = 0
 

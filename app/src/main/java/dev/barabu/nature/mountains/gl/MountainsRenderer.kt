@@ -26,6 +26,7 @@ import android.opengl.Matrix.translateM
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.base.TextureLoader
+import dev.barabu.base.geometry.Vector
 import dev.barabu.nature.R
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -63,6 +64,9 @@ class MountainsRenderer(private val context: Context) : Renderer {
 
     private var xRotation: Float = 0f
     private var yRotation: Float = 0f
+
+    // Направление от НА источник света
+    private val vectorToLight = Vector(0.6f, 1f, -0.6f).unit
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         glClearColor(1f, 1f, 1f, 1f)
@@ -125,11 +129,12 @@ class MountainsRenderer(private val context: Context) : Renderer {
 
     private fun drawHeightmap() {
         setIdentityM(modelMatrix, 0)
-        scaleM(modelMatrix, 0, 100f, 10f, 100f)
+        scaleM(modelMatrix, 0, 20f, 2f, 20f)
         updateMvpMatrix()
         heightmapProgram.apply {
             useProgram()
             bindMatrixUniform(modelViewProjectionMatrix)
+            bindLightVectorUniform(vectorToLight)
             draw()
         }
     }

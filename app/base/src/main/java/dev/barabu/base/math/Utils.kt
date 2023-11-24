@@ -79,3 +79,5 @@ fun intersectionPoint(ray: Ray, plane: Plane): Point {
 }
 
 fun clamp(value: Float, min: Float, max: Float): Float = min(max, max(min, value))
+
+fun clamp(value: Int, min: Int, max: Int): Int = max(min, min(max, value))
