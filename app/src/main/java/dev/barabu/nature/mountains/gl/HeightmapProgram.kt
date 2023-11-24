@@ -26,6 +26,10 @@ class HeightmapProgram(
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
 
+    /**
+     * INFO: PNG-файл должен находиться в папке drawable-nodpi, чтобы загрузчик не пытался
+     *  масштабировать w/h битмапы под dpi экрана.
+     */
     override val model: Model =
         Heightmap((ContextCompat.getDrawable(context, drawableId) as BitmapDrawable).bitmap)
 

@@ -30,6 +30,21 @@ import dev.barabu.nature.R
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
+/**
+ * Отрисовка неба (Skybox) и ландшафта (Heightmap).
+ *
+ * Skybox - это куб со сторонами 2x2 с центром в начале координат. Heightmap - это квадратная со
+ * сторонами 1x1 рельефная поверхность, основание которой лежит на плоскости XZ, а "горы" растут
+ * по оси +Y. И Skybox и Heightmap позиционируются матрицей [modelMatrix] которая всегда identity,
+ * то есть эти объекты всегда по центру. Для отрисовки используем две камеры. Камера Heightmap
+ * позиционируются матрицей [viewMatrix], камера Skybox позиционируются матрицей [viewMatrixForSky].
+ *
+ * Skybox - это небесная оболочка вокруг наблюдателя. Оно окружает все остальные предметы мира, а
+ * значит должна находиться в самой дальней видимой позиции, на far плоскости нашего frustum.
+ * Для того чтобы всегда размещать на far плоскости мы делаем трюк с z-координатой в коде vertex
+ * шейдера 'gl_Position = gl_Position.xyww;' Мы принудительно записываем в z значение w. При
+ * последующем perspective divide мы получим z = 1, то есть положение вертекса на плоскости far.
+ */
 class MountainsRenderer(private val context: Context) : Renderer {
 
     private lateinit var skyboxProgram: SkyboxProgram
@@ -41,7 +56,6 @@ class MountainsRenderer(private val context: Context) : Renderer {
     private val viewMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val modelViewProjectionMatrix = FloatArray(16)
-
     private val viewMatrixForSky = FloatArray(16)
 
     // Descriptor нативного буфера с битмапой
