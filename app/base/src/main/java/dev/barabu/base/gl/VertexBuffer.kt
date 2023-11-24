@@ -64,7 +64,6 @@ class VertexBuffer(private val vertexData: FloatArray) {
      * Нацеливает атрибут [attrDescriptor] на позицию [offset] буфера [bufferId]
      */
     fun bindAttribute(attrDescriptor: Int, offset: Int, componentCount: Int, stride: Int) {
-        Logging.d("$TAG.bindAttribute")
         glVertexAttribPointer(
             attrDescriptor,
             componentCount,

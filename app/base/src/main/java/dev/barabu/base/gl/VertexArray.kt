@@ -3,7 +3,6 @@ package dev.barabu.base.gl
 import android.opengl.GLES30.glBindVertexArray
 import android.opengl.GLES30.glGenVertexArrays
 import dev.barabu.base.INVALID_DESCRIPTOR
-import dev.barabu.base.Logging
 
 /**
  * Vertex Array Object (VBO) является "контейнером" для отдельного Vertex Buffer Object (VBO)
@@ -31,17 +30,14 @@ class VertexArray(private val vertexBuffer: VertexBuffer, elementBuffer: Element
     }
 
     fun bind() {
-        Logging.d("$TAG.bind")
         glBindVertexArray(arrayId)
     }
 
     fun release() {
-        Logging.d("$TAG.release")
         glBindVertexArray(0)
     }
 
     fun bindAttribute(attrDescriptor: Int, offset: Int, componentCount: Int, stride: Int) {
-        Logging.d("$TAG.bindAttribute")
         vertexBuffer.bindAttribute(attrDescriptor, offset, componentCount, stride)
     }
 

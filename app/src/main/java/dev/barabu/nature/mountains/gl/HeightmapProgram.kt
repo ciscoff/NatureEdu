@@ -38,8 +38,14 @@ class HeightmapProgram(
     private var uMatrixDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_MATRIX)
 
-    private var uVectorToLightDescriptor: Int =
-        glGetUniformLocation(programDescriptor, U_VECTOR_TO_LIGHT)
+    private var uModelMatrixDescriptor: Int =
+        glGetUniformLocation(programDescriptor, U_MODEL_MATRIX)
+
+    private var uLightPositionDescriptor: Int =
+        glGetUniformLocation(programDescriptor, U_LIGHT_POSITION)
+
+    private var uLightColorDescriptor: Int =
+        glGetUniformLocation(programDescriptor, U_LIGHT_COLOR)
 
     private val aPositionDescriptor: Int =
         glGetAttribLocation(programDescriptor, A_POSITION)
@@ -64,8 +70,19 @@ class HeightmapProgram(
         glUniformMatrix4fv(uMatrixDescriptor, 1, false, matrix, 0)
     }
 
-    fun bindLightVectorUniform(vectorToLight: Vector) {
-        glUniform3f(uVectorToLightDescriptor, vectorToLight.x, vectorToLight.y, vectorToLight.z)
+    fun bindModelMatrixUniform(matrix: FloatArray) {
+        Logging.d("$TAG.bindModelMatrixUniform")
+        glUniformMatrix4fv(uModelMatrixDescriptor, 1, false, matrix, 0)
+    }
+
+    fun bindLightPositionUniform(position: Vector) {
+        Logging.d("$TAG.bindLightPositionUniform")
+        glUniform3f(uLightPositionDescriptor, position.x, position.y, position.z)
+    }
+
+    fun bindLightColorUniform(color: Vector) {
+        Logging.d("$TAG.bindLightColorUniform")
+        glUniform3f(uLightColorDescriptor, color.r, color.g, color.b)
     }
 
     override fun draw() {
@@ -79,6 +96,8 @@ class HeightmapProgram(
         private const val A_POSITION = "a_Position"
         private const val A_NORMAL = "a_Normal"
         private const val U_MATRIX = "u_Matrix"
-        private const val U_VECTOR_TO_LIGHT = "u_VectorToLight"
+        private const val U_MODEL_MATRIX = "u_ModelMatrix"
+        private const val U_LIGHT_POSITION = "u_LightPos"
+        private const val U_LIGHT_COLOR = "u_LightColor"
     }
 }

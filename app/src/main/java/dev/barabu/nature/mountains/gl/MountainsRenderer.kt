@@ -66,7 +66,8 @@ class MountainsRenderer(private val context: Context) : Renderer {
     private var yRotation: Float = 0f
 
     // Направление от НА источник света
-    private val vectorToLight = Vector(0.6f, 1f, -0.6f).unit
+    private val lightPosition = Vector(0.6f, 1f, -0.6f).unit
+    private val lightColor = Vector(1.0f, 1.0f, 1.0f)
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         glClearColor(1f, 1f, 1f, 1f)
@@ -134,7 +135,9 @@ class MountainsRenderer(private val context: Context) : Renderer {
         heightmapProgram.apply {
             useProgram()
             bindMatrixUniform(modelViewProjectionMatrix)
-            bindLightVectorUniform(vectorToLight)
+            bindModelMatrixUniform(modelMatrix)
+            bindLightPositionUniform(lightPosition)
+            bindLightColorUniform(lightColor)
             draw()
         }
     }
