@@ -1,6 +1,7 @@
 package dev.barabu.nature.sphere.gl
 
 import android.content.Context
+import android.opengl.GLES20
 import android.opengl.GLES20.glGetAttribLocation
 import android.opengl.GLES20.glGetUniformLocation
 import android.opengl.GLES20.glUniformMatrix4fv
@@ -8,21 +9,26 @@ import android.opengl.GLES20.glUseProgram
 import dev.barabu.base.TextResourceReader
 import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
+import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
 import dev.barabu.nature.sphere.domain.Sphere
 
 class SphereProgram(
     context: Context,
+    radius: Float,
+    isMeshed: Boolean = false,
     vertexShaderResourceId: Int = R.raw.sphere_vertex_shader,
     fragmentShaderResourceId: Int = R.raw.sphere_fragment_shader
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
-    override val model: Model = Sphere(radius = 1f)
+    override val model: Model = Sphere(radius, isMeshed)
 
     private var uMatrixDescriptor: Int = glGetUniformLocation(programDescriptor, U_MATRIX)
+
+    private var uColorDescriptor: Int = glGetUniformLocation(programDescriptor, U_COLOR)
 
     private val aPositionDescriptor: Int = glGetAttribLocation(programDescriptor, A_POSITION)
 
@@ -39,11 +45,16 @@ class SphereProgram(
         glUniformMatrix4fv(uMatrixDescriptor, 1, false, matrix, 0)
     }
 
+    fun bindColorUniform(color: Vector) {
+        GLES20.glUniform3f(uColorDescriptor, color.r, color.g, color.b)
+    }
+
     companion object {
 
         private const val TAG = "SphereProgram"
 
         private const val A_POSITION = "a_Position"
         private const val U_MATRIX = "u_Matrix"
+        private const val U_COLOR = "u_Color"
     }
 }

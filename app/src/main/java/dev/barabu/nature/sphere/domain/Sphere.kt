@@ -1,6 +1,7 @@
 package dev.barabu.nature.sphere.domain
 
 import android.opengl.GLES20.GL_LINES
+import android.opengl.GLES20.GL_TRIANGLES
 import android.opengl.GLES20.GL_UNSIGNED_INT
 import android.opengl.GLES20.glDrawElements
 import android.opengl.GLES20.glLineWidth
@@ -46,7 +47,7 @@ import kotlin.math.sin
  */
 class Sphere(
     radius: Float,
-    isMeshed: Boolean = false,
+    private val isMeshed: Boolean = false,
     stacks: Int = DEFAULT_STACK_COUNT,
     sectors: Int = DEFAULT_SECTOR_COUNT
 ) : Model {
@@ -63,8 +64,13 @@ class Sphere(
 
     private val lineCount = 2 * stackCount * sectorCount + stackCount - sectorCount
 
+    private val triangleCount = 2 * sectorCount * (stackCount - 1)
+
     // Количество индексов для отрисовки всех линий
     private val lineElementsCount = lineCount * 2
+
+    // Количество индексов для отрисовки всех треугольников
+    private val triangleElementCount = triangleCount * 3
 
     private val vertexArray: VertexArray = VertexArray(
         VertexBuffer(buildVertices()),
@@ -91,8 +97,14 @@ class Sphere(
 
     override fun draw() {
         vertexArray.bind()
-        glLineWidth(2f)
-        glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
+
+        if (isMeshed) {
+            glDrawElements(GL_TRIANGLES, triangleElementCount, GL_UNSIGNED_INT, 0)
+        } else {
+            glLineWidth(1.6f)
+            glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
+        }
+
         vertexArray.release()
     }
 
@@ -157,7 +169,36 @@ class Sphere(
     //     |  / |
     //     | /  |
     //     k2--k2+1
-    private fun buildMesh(): IntArray = intArrayOf(0)
+    private fun buildMesh(): IntArray {
+        val elements = IntArray(triangleElementCount)
+
+        var index = 0
+        repeat(stackCount) { i ->
+
+            var k1 = i * (sectorCount + 1)    // индекс вертекса на текущем уровне
+            var k2 = k1 + sectorCount + 1   // индекс вертекса на следующем уровне
+
+            repeat(sectorCount) { j ->
+
+                if (i != 0) {
+                    elements[index++] = k1
+                    elements[index++] = k2
+                    elements[index++] = k1 + 1
+                }
+
+                if (i != (stackCount - 1)) {
+                    elements[index++] = k1 + 1
+                    elements[index++] = k2
+                    elements[index++] = k2 + 1
+                }
+
+                k1++
+                k2++
+            }
+        }
+
+        return elements
+    }
 
     /**
      * На каждую линию по 2 индекса
