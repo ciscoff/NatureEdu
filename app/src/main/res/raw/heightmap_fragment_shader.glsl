@@ -4,6 +4,7 @@ uniform vec3 u_LightPos;
 uniform vec3 u_LightColor;
 
 varying vec3 v_Color;
+
 varying vec3 v_FragPos;
 varying vec3 v_Normal;
 

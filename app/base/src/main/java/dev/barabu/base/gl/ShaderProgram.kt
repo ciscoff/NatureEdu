@@ -34,7 +34,7 @@ abstract class ShaderProgram(
     /**
      * Что рисовать
      */
-    abstract val model: Model
+    protected abstract val model: Model
 
     /**
      * Как рисовать
