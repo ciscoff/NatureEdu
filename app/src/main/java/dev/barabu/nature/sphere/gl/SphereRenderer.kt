@@ -36,8 +36,10 @@ class SphereRenderer(private val context: Context) : Renderer {
     // NOTE: Именно Point, потому что это координата светильника в пространстве, а не направление
     //  к нему. У меня была ошибка: использовал Vector, да еще v.unit. Вот чтобы случайно не
     //  применить unit используем Point, а не Vector.
-    private val lightPosition = Point(2.0f, 4.0f, 2.0f)
+    private val lightPosition = Point(2.0f, 4.0f, 4.0f)
     private val lightColor = Vector(1f, 1f, 1f)
+
+    private val viewerPosition = Point(1.0f, 1.0f, 2.0f)
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         glClearColor(0f, 0f, 0f, 1f)
@@ -89,11 +91,21 @@ class SphereRenderer(private val context: Context) : Renderer {
             bindModelMatrixUniform(modelMatrix)
             bindLightPositionUniform(lightPosition)
             bindLightColorUniform(lightColor)
+            bindViewerPositionUniform(viewerPosition)
+
+            bindMaterialUniform(
+                ambient = Vector(0.4f, 0.4f, 0.4f),
+                diffuse = Vector(0.4f, 0.4f, 0.4f),
+                specular = Vector(0.7f, 0.7f, 0.7f),
+                shininess = 32f
+            )
 
             bindColorUniform(Vector(0.7f, 0.7f, 0.7f))
+            bindDrawMashUniform(false)
             draw(Sphere.Mode.Solid, false)
 
             bindMeshColorUniform(Vector(0.0f, 0.0f, 0.0f))
+            bindDrawMashUniform(true)
             draw(Sphere.Mode.Mesh, true)
         }
     }

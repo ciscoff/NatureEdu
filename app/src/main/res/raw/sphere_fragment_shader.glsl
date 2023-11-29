@@ -1,12 +1,26 @@
+#version 300 es
 precision mediump float;
+
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+};
 
 uniform vec3 u_LightPos;
 uniform vec3 u_LightColor;
 
 uniform vec3 u_Color;
+uniform vec3 u_ViewerPos;
 
-varying vec3 v_FragPos;
-varying vec3 v_Normal;
+uniform int u_DrawMesh;
+
+in vec3 v_FragPos;
+in vec3 v_Normal;
+out vec4 FragColor;
+
+uniform Material u_Material;
 
 /**
   На что обратить внимание:
@@ -23,14 +37,24 @@ varying vec3 v_Normal;
 void main() {
     vec3 color = u_Color;
 
-    vec3 lightDir = normalize(u_LightPos - v_FragPos);
+    if (u_DrawMesh == 0) {
+        // ambient color
+        float ambientFactor = 0.8; // темнее/светлее
+        vec3 ambientColor = ambientFactor * u_LightColor * u_Material.ambient;
 
-    // Учитываем угол падения света на поверхность фрагмента. Это будет влиять на
-    // интенсивность освещения.
-    float diffFactor = max(dot(v_Normal, lightDir), 0.0);
+        // diffuse color
+        vec3 lightDir = normalize(u_LightPos - v_FragPos);
+        float diffFactor = max(dot(v_Normal, lightDir), 0.0);
+        vec3 diffuseColor = u_LightColor * (diffFactor * u_Material.diffuse);
 
-    vec3 diffusion = diffFactor * u_LightColor;
-    color = diffusion * u_Color;
+        // specular color
+        vec3 viewDir = normalize(u_ViewerPos - v_FragPos);
+        vec3 reflectDir = reflect(-lightDir, v_Normal);
+        float specFactor = pow(max(dot(viewDir, reflectDir), 0.0), u_Material.shininess);
+        vec3 specularColor = u_LightColor * (specFactor * u_Material.specular);
 
-    gl_FragColor = vec4(color, 1.0);
+        color = ambientColor + diffuseColor + specularColor;
+    }
+
+    FragColor = vec4(color, 1.0);
 }

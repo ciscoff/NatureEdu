@@ -1,11 +1,12 @@
+#version 300 es
 uniform mat4 u_MvpMatrix;
 uniform mat4 u_ModelMatrix;
 
-attribute vec3 a_Position;
-attribute vec3 a_Normal;
+in vec3 a_Position;
+in vec3 a_Normal;
 
-varying vec3 v_FragPos;
-varying vec3 v_Normal;
+out vec3 v_FragPos;
+out vec3 v_Normal;
 
 void main() {
     v_Normal = a_Normal;
