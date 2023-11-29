@@ -173,7 +173,6 @@ class Sphere(
             repeat(sectorCount + 1) { j ->
                 val sectorAngle = j * sectorStep  // от 0 до 2*PI
                 val x = xz * cos(sectorAngle)
-                // note: вот тут можно со знаком поиграться
                 val z = xz * sin(sectorAngle)
 
                 // Координаты вертекса
