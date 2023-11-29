@@ -54,6 +54,10 @@ class ElementBuffer(private val indices: IntArray) {
         )
     }
 
+    fun bind() {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferId)
+    }
+
     companion object {
         private const val TAG = "   ElementBuffer"
     }

@@ -1,8 +1,10 @@
-package dev.barabu.nature.sphere.gl
+package dev.barabu.nature.sphere.gl.prototype
 
 import android.content.Context
 import android.opengl.GLES20.glGetAttribLocation
 import android.opengl.GLES20.glGetUniformLocation
+import android.opengl.GLES20.glUniform1i
+import android.opengl.GLES20.glUniform2f
 import android.opengl.GLES20.glUniform3f
 import android.opengl.GLES20.glUniformMatrix4fv
 import android.opengl.GLES20.glUseProgram
@@ -13,26 +15,28 @@ import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
-import dev.barabu.nature.sphere.domain.Sphere
+import dev.barabu.nature.sphere.domain.prototype.PolygonSphere
+import dev.barabu.nature.sphere.domain.prototype.StrokeSphere
 
 class SphereProgram(
     context: Context,
     radius: Float,
-    vertexShaderResourceId: Int = R.raw.sphere_vertex_shader,
-    fragmentShaderResourceId: Int = R.raw.sphere_fragment_shader
+    isPolygon: Boolean = false,
+    vertexShaderResourceId: Int = R.raw.prototype_sphere_vertex_shader,
+    fragmentShaderResourceId: Int = R.raw.prototype_sphere_fragment_shader
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
-    override val model: Model = Sphere(radius)
+    override val model: Model = if (isPolygon) PolygonSphere(radius) else StrokeSphere(radius)
 
-    private var uMvpMatrixDescriptor: Int =
+    private var uMatrixDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_MVP_MATRIX)
 
     private var uModelMatrixDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_MODEL_MATRIX)
 
-    private var uSolidColorDescriptor: Int =
+    private var uColorDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_COLOR)
 
     private var uLightColorDescriptor: Int =
@@ -40,6 +44,12 @@ class SphereProgram(
 
     private var uLightPositionDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_LIGHT_POSITION)
+
+    private val uIlluminateDescriptor: Int =
+        glGetUniformLocation(programDescriptor, U_ILLUMINATED)
+
+    private val uResolution: Int =
+        glGetUniformLocation(programDescriptor, U_RESOLUTION)
 
     private val aPositionDescriptor: Int =
         glGetAttribLocation(programDescriptor, A_POSITION)
@@ -61,23 +71,12 @@ class SphereProgram(
         glUseProgram(0)
     }
 
-    fun draw(mode: Sphere.Mode, isFinal: Boolean) {
-        (model as Sphere).draw(mode)
-        if(isFinal) {
-            glUseProgram(0)
-        }
-    }
-
     fun bindColorUniform(color: Vector) {
-        glUniform3f(uSolidColorDescriptor, color.r, color.g, color.b)
+        glUniform3f(uColorDescriptor, color.r, color.g, color.b)
     }
 
-    fun bindMeshColorUniform(color: Vector) {
-        glUniform3f(uSolidColorDescriptor, color.r, color.g, color.b)
-    }
-
-    fun bindMvpMatrixUniform(matrix: FloatArray) {
-        glUniformMatrix4fv(uMvpMatrixDescriptor, 1, false, matrix, 0)
+    fun bindMatrixUniform(matrix: FloatArray) {
+        glUniformMatrix4fv(uMatrixDescriptor, 1, false, matrix, 0)
     }
 
     fun bindModelMatrixUniform(matrix: FloatArray) {
@@ -92,6 +91,14 @@ class SphereProgram(
         glUniform3f(uLightColorDescriptor, color.r, color.g, color.b)
     }
 
+    fun bindIlluminateUniform(isIlluminate: Int) {
+        glUniform1i(uIlluminateDescriptor, isIlluminate)
+    }
+
+    fun bindResolutionUniform(w: Float, h: Float) {
+        glUniform2f(uResolution, w, h)
+    }
+
     companion object {
 
         private const val TAG = "SphereProgram"
@@ -101,8 +108,9 @@ class SphereProgram(
         private const val U_MVP_MATRIX = "u_MvpMatrix"
         private const val U_MODEL_MATRIX = "u_ModelMatrix"
         private const val U_COLOR = "u_Color"
-
         private const val U_LIGHT_POSITION = "u_LightPos"
         private const val U_LIGHT_COLOR = "u_LightColor"
+        private const val U_ILLUMINATED = "u_Illuminated"
+        private const val U_RESOLUTION = "u_Resolution"
     }
 }

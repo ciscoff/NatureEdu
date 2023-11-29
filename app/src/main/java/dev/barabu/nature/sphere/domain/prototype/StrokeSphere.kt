@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.domain
+package dev.barabu.nature.sphere.domain.prototype
 
 import android.opengl.GLES20.GL_LINES
 import android.opengl.GLES20.GL_UNSIGNED_INT

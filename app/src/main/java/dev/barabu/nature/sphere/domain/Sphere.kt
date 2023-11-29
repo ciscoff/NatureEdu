@@ -12,7 +12,6 @@ import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
 import dev.barabu.base.gl.ElementBuffer
-import dev.barabu.base.gl.VertexArray
 import dev.barabu.base.gl.VertexBuffer
 import kotlin.math.PI
 import kotlin.math.abs
@@ -25,15 +24,11 @@ import kotlin.math.sin
  * Stacks - это горизонтальные срезы сферы.
  * Sectors - это вертикальные "дольки апельсина"
  *
- * Реализовано два способа представления сферы - сеткой треугольников и сеткой линий.
- * Для каждой реализации создается отдельный интанс Sphere, потому что один VAO не может
- * хранить несколько EBO.
+ * Реализовано два способа отрисовки - сеткой треугольников (сплошная заливка) и сеткой линий.
+ * Один VAO использует один VBO и два EBO (для треугольников и для линий).
  *
- * Как альтернатива - использовать один EBO и хранить в нем оба типа индексов, но не вперемешку,
- * а последовательно два блока. Нужно определить размеры каждого блока, чтобы выделить массив.
- *
- * Количество индексов для Mesh
- * ==============================
+ * Количество индексов для треугольников
+ * =====================================
  * ((stackCount - 1) * sectorCount) * 6
  *
  * Количество индексов для Lines
@@ -47,10 +42,18 @@ import kotlin.math.sin
  */
 class Sphere(
     radius: Float,
-    private val isMeshed: Boolean = false,
     stacks: Int = DEFAULT_STACK_COUNT,
     sectors: Int = DEFAULT_SECTOR_COUNT
 ) : Model {
+
+    /**
+     * Режим отрисовки.
+     */
+    enum class Mode {
+        Solid,
+        Mesh,
+        Both
+    }
 
     private val radius =
         if (radius == 0f) throw IllegalArgumentException("radius cannot be 0.0")
@@ -72,9 +75,10 @@ class Sphere(
     // Количество индексов для отрисовки всех треугольников
     private val triangleElementCount = triangleCount * 3
 
-    private val vertexArray: VertexArray = VertexArray(
+    private val vertexArray: SphereVertexArray = SphereVertexArray(
         VertexBuffer(buildVertices()),
-        ElementBuffer(buildElements(isMeshed))
+        ElementBuffer(buildTriangles()),
+        ElementBuffer(buildLines())
     )
 
     override fun bindAttributes(attributes: List<Attribute>) {
@@ -82,10 +86,18 @@ class Sphere(
         vertexArray.bind()
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
-                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Normal -> {
+                Attribute.Type.Position, Attribute.Type.Color -> {
                     Triple(
                         POSITION_COMPONENT_COUNT,
                         0,
+                        STRIDE
+                    )
+                }
+
+                Attribute.Type.Normal -> {
+                    Triple(
+                        NORMAL_COMPONENT_COUNT,
+                        POSITION_COMPONENT_COUNT * BYTES_PER_FLOAT,
                         STRIDE
                     )
                 }
@@ -97,15 +109,40 @@ class Sphere(
 
     override fun draw() {
         vertexArray.bind()
-
-        if (isMeshed) {
-            glDrawElements(GL_TRIANGLES, triangleElementCount, GL_UNSIGNED_INT, 0)
-        } else {
-            glLineWidth(1.6f)
-            glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
-        }
-
+        drawMesh()
+        drawSolid()
         vertexArray.release()
+    }
+
+    fun draw(mode: Mode) {
+        vertexArray.bind()
+
+        when (mode) {
+            Mode.Solid -> drawSolid()
+            Mode.Mesh -> drawMesh()
+            Mode.Both -> {
+                drawMesh()
+                drawSolid()
+            }
+        }
+        vertexArray.release()
+    }
+
+    /**
+     * Закрашиваем треугольниками
+     */
+    private fun drawSolid() {
+        vertexArray.bindPolygons()
+        glDrawElements(GL_TRIANGLES, triangleElementCount, GL_UNSIGNED_INT, 0)
+    }
+
+    /**
+     * Рисуем линии по сфере
+     */
+    private fun drawMesh() {
+        vertexArray.bindLines()
+        glLineWidth(1.6f)
+        glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
     }
 
     /**
@@ -154,9 +191,6 @@ class Sphere(
         return floatArray
     }
 
-    private fun buildElements(isMeshed: Boolean): IntArray =
-        if (isMeshed) buildMesh() else buildLines()
-
     // Генерим CCW индексы вертексов для треугольников. Вся сфера разбита на набор секторов,
     // образованных пересечением горизонтальный и вертикальных линий. Точки пересечения - это
     // вертексы. На рисунке ниже:
@@ -169,7 +203,7 @@ class Sphere(
     //     |  / |
     //     | /  |
     //     k2--k2+1
-    private fun buildMesh(): IntArray {
+    private fun buildTriangles(): IntArray {
         val elements = IntArray(triangleElementCount)
 
         var index = 0

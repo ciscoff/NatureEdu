@@ -1,11 +1,11 @@
-package dev.barabu.nature.sphere.gl
+package dev.barabu.nature.sphere.gl.prototype
 
 import android.content.Context
 import android.opengl.GLES20.GL_BLEND
 import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES20.GL_DEPTH_BUFFER_BIT
 import android.opengl.GLES20.GL_DEPTH_TEST
-import android.opengl.GLES20.GL_LEQUAL
+import android.opengl.GLES20.GL_LESS
 import android.opengl.GLES20.GL_ONE_MINUS_SRC_ALPHA
 import android.opengl.GLES20.GL_SRC_ALPHA
 import android.opengl.GLES20.glBlendFunc
@@ -18,14 +18,17 @@ import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
 import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
-import dev.barabu.nature.sphere.domain.Sphere
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import javax.microedition.khronos.opengles.GL10.GL_LINE_SMOOTH
 
 class SphereRenderer(private val context: Context) : Renderer {
 
-    private lateinit var sphereProgram: SphereProgram
+    // Сфера-каркас
+    private lateinit var strokeSphereProgram: SphereProgram
+
+    // Сфера-заливка
+    private lateinit var polygonSphereProgram: SphereProgram
 
     private val modelMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
@@ -39,14 +42,23 @@ class SphereRenderer(private val context: Context) : Renderer {
     private val lightPosition = Point(2.0f, 4.0f, 2.0f)
     private val lightColor = Vector(1f, 1f, 1f)
 
+    private var resolution = Vector(0f, 0f, 0f)
+
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         glClearColor(0f, 0f, 0f, 1f)
 
-        sphereProgram = SphereProgram(context, 1.0f)
+        /**
+         * INFO: Маленький трюк.
+         *  Радиус Polygon-сферы немного меньше радиуса Stroke-сферы. В этом случае Polygon-сфера
+         *  оказывается полностью внутри каркаса и z-buffer отлично работает. Мы не видим заднюю
+         *  часть скелетона, потому что он закрыт Polygon-сферой.
+         */
+        strokeSphereProgram = SphereProgram(context, 1.01f, false)
+        polygonSphereProgram = SphereProgram(context, 1.0f, true)
 
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         glEnable(GL_DEPTH_TEST)
-        glDepthFunc(GL_LEQUAL)
+        glDepthFunc(GL_LESS)
 
         // Сглаженные линии, но для этого нужна поддержка прозрачности (см. далее)
         glEnable(GL_LINE_SMOOTH)
@@ -66,6 +78,9 @@ class SphereRenderer(private val context: Context) : Renderer {
             return
         }
 
+        // Не используется.
+        resolution = Vector(width.toFloat(), height.toFloat(), 0f)
+
         Matrix.perspectiveM(projectionMatrix, 0, 45f, width.toFloat() / height.toFloat(), 1f, 10f)
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 6f, 0f, 0f, 0f, 0f, 1f, 0f)
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
@@ -79,22 +94,35 @@ class SphereRenderer(private val context: Context) : Renderer {
 
     override fun onDrawFrame(p0: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-        drawSphere()
+        drawPolygonSphere()
+        drawStrokeSphere()
     }
 
-    private fun drawSphere() {
-        sphereProgram.apply {
+    private fun drawStrokeSphere() {
+        strokeSphereProgram.apply {
             useProgram()
-            bindMvpMatrixUniform(modelViewProjectionMatrix)
+            bindColorUniform(Vector(0.0f, 0.0f, 0.0f))
+            bindMatrixUniform(modelViewProjectionMatrix)
             bindModelMatrixUniform(modelMatrix)
             bindLightPositionUniform(lightPosition)
             bindLightColorUniform(lightColor)
+            bindIlluminateUniform(0)
+            bindResolutionUniform(resolution.x, resolution.y)
+            draw()
+        }
+    }
 
+    private fun drawPolygonSphere() {
+        polygonSphereProgram.apply {
+            useProgram()
             bindColorUniform(Vector(0.7f, 0.7f, 0.7f))
-            draw(Sphere.Mode.Solid, false)
-
-            bindMeshColorUniform(Vector(0.0f, 0.0f, 0.0f))
-            draw(Sphere.Mode.Mesh, true)
+            bindMatrixUniform(modelViewProjectionMatrix)
+            bindModelMatrixUniform(modelMatrix)
+            bindLightPositionUniform(lightPosition)
+            bindLightColorUniform(lightColor)
+            bindIlluminateUniform(1)
+            bindResolutionUniform(resolution.x, resolution.y)
+            draw()
         }
     }
 }
