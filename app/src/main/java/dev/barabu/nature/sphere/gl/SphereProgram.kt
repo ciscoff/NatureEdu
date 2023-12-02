@@ -20,13 +20,14 @@ import dev.barabu.nature.sphere.domain.Sphere
 class SphereProgram(
     context: Context,
     radius: Float,
+    isFlat: Boolean,
     vertexShaderResourceId: Int = R.raw.sphere_vertex_shader,
     fragmentShaderResourceId: Int = R.raw.sphere_fragment_shader
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
-    override val model: Model = Sphere(radius)
+    override val model: Model = Sphere(radius = radius, isFlat = isFlat)
 
     private var uMvpMatrixDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_MVP_MATRIX)
@@ -34,11 +35,8 @@ class SphereProgram(
     private var uModelMatrixDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_MODEL_MATRIX)
 
-    private var uSolidColorDescriptor: Int =
+    private var uColorDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_COLOR)
-
-    private var uLightColorDescriptor: Int =
-        glGetUniformLocation(programDescriptor, U_LIGHT_COLOR)
 
     private var uLightPositionDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_LIGHT_POSITION)
@@ -46,8 +44,8 @@ class SphereProgram(
     private var uViewerPositionDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_VIEWER_POSITION)
 
-    private var uDrawMeshDescriptor: Int =
-        glGetUniformLocation(programDescriptor, U_DRAW_MESH)
+    private var uDrawPolygonDescriptor: Int =
+        glGetUniformLocation(programDescriptor, U_DRAW_POLYGON)
 
     private val aPositionDescriptor: Int =
         glGetAttribLocation(programDescriptor, A_POSITION)
@@ -77,11 +75,7 @@ class SphereProgram(
     }
 
     fun bindColorUniform(color: Vector) {
-        glUniform3f(uSolidColorDescriptor, color.r, color.g, color.b)
-    }
-
-    fun bindMeshColorUniform(color: Vector) {
-        glUniform3f(uSolidColorDescriptor, color.r, color.g, color.b)
+        glUniform3f(uColorDescriptor, color.r, color.g, color.b)
     }
 
     fun bindMvpMatrixUniform(matrix: FloatArray) {
@@ -96,16 +90,12 @@ class SphereProgram(
         glUniform3f(uLightPositionDescriptor, position.x, position.y, position.z)
     }
 
-    fun bindLightColorUniform(color: Vector) {
-        glUniform3f(uLightColorDescriptor, color.r, color.g, color.b)
-    }
-
     fun bindViewerPositionUniform(position: Point) {
         glUniform3f(uViewerPositionDescriptor, position.x, position.y, position.z)
     }
 
-    fun bindDrawMashUniform(isMesh: Boolean) {
-        glUniform1i(uDrawMeshDescriptor, if (isMesh) 1 else 0)
+    fun bindDrawPolygonUniform(isPolygon: Boolean) {
+        glUniform1i(uDrawPolygonDescriptor, if (isPolygon) 1 else 0)
     }
 
     fun bindMaterialUniform(
@@ -121,12 +111,31 @@ class SphereProgram(
         ).forEach { e ->
             glUniform3f(
                 glGetUniformLocation(programDescriptor, e.key),
-                e.value.x,
-                e.value.y,
-                e.value.z
+                e.value.r,
+                e.value.g,
+                e.value.b
             )
         }
         glUniform1f(glGetUniformLocation(programDescriptor, "u_Material.shininess"), shininess)
+    }
+
+    fun bindLightUniform(
+        ambient: Vector,
+        diffuse: Vector,
+        specular: Vector,
+    ) {
+        mapOf(
+            "u_Light.ambient" to ambient,
+            "u_Light.diffuse" to diffuse,
+            "u_Light.specular" to specular
+        ).forEach { e ->
+            glUniform3f(
+                glGetUniformLocation(programDescriptor, e.key),
+                e.value.r,
+                e.value.g,
+                e.value.b
+            )
+        }
     }
 
     companion object {
@@ -138,9 +147,8 @@ class SphereProgram(
         private const val U_MVP_MATRIX = "u_MvpMatrix"
         private const val U_MODEL_MATRIX = "u_ModelMatrix"
         private const val U_COLOR = "u_Color"
-        private const val U_DRAW_MESH = "u_DrawMesh"
+        private const val U_DRAW_POLYGON = "u_DrawPolygon"
         private const val U_LIGHT_POSITION = "u_LightPos"
-        private const val U_LIGHT_COLOR = "u_LightColor"
         private const val U_VIEWER_POSITION = "u_ViewerPos"
     }
 }

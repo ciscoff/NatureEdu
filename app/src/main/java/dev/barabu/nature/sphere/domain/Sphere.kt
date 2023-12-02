@@ -11,6 +11,9 @@ import dev.barabu.base.NORMAL_COMPONENT_COUNT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
+import dev.barabu.base.domain.Vertex
+import dev.barabu.base.extentions.asVector
+import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 import kotlin.math.PI
@@ -43,15 +46,22 @@ import kotlin.math.sin
 class Sphere(
     radius: Float,
     stacks: Int = DEFAULT_STACK_COUNT,
-    sectors: Int = DEFAULT_SECTOR_COUNT
+    sectors: Int = DEFAULT_SECTOR_COUNT,
+    isFlat: Boolean = true
 ) : Model {
+
+    private class Data(
+        val vertices: FloatArray,
+        val triangles: IntArray,
+        val lines: IntArray
+    )
 
     /**
      * Режим отрисовки.
      */
     enum class Mode {
         Solid,
-        Mesh,
+        Line,
         Both
     }
 
@@ -75,11 +85,24 @@ class Sphere(
     // Количество индексов для отрисовки всех треугольников
     private val triangleElementCount = triangleCount * 3
 
-    private val vertexArray: SphereVertexArray = SphereVertexArray(
-        VertexBuffer(buildVertices()),
-        ElementBuffer(buildTriangles()),
-        ElementBuffer(buildLines())
-    )
+    private val vertexArray: SphereVertexArray
+
+    init {
+        vertexArray = if (isFlat) {
+            val data = buildVerticesFlat()
+            SphereVertexArray(
+                VertexBuffer(data.vertices),
+                ElementBuffer(data.triangles),
+                ElementBuffer(data.lines)
+            )
+        } else {
+            SphereVertexArray(
+                VertexBuffer(buildVertices()),
+                ElementBuffer(buildTriangles()),
+                ElementBuffer(buildLines())
+            )
+        }
+    }
 
     override fun bindAttributes(attributes: List<Attribute>) {
         Logging.d("$TAG.bindAttributes")
@@ -109,8 +132,8 @@ class Sphere(
 
     override fun draw() {
         vertexArray.bind()
-        drawMesh()
-        drawSolid()
+        drawLines()
+        drawPolygons()
         vertexArray.release()
     }
 
@@ -118,11 +141,11 @@ class Sphere(
         vertexArray.bind()
 
         when (mode) {
-            Mode.Solid -> drawSolid()
-            Mode.Mesh -> drawMesh()
+            Mode.Solid -> drawPolygons()
+            Mode.Line -> drawLines()
             Mode.Both -> {
-                drawMesh()
-                drawSolid()
+                drawPolygons()
+                drawLines()
             }
         }
         vertexArray.release()
@@ -131,7 +154,7 @@ class Sphere(
     /**
      * Закрашиваем треугольниками
      */
-    private fun drawSolid() {
+    private fun drawPolygons() {
         vertexArray.bindPolygons()
         glDrawElements(GL_TRIANGLES, triangleElementCount, GL_UNSIGNED_INT, 0)
     }
@@ -139,10 +162,191 @@ class Sphere(
     /**
      * Рисуем линии по сфере
      */
-    private fun drawMesh() {
+    private fun drawLines() {
         vertexArray.bindLines()
-        glLineWidth(1.6f)
+        glLineWidth(1.2f)
         glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
+    }
+
+    private fun buildVerticesFlat(): Data {
+
+        var vi1: Int
+        var vi2: Int
+        var k = 0
+        var vi = 0
+        var ti = 0
+        var li = 0
+        // Массив вертексов (только координаты)
+        val vertices = getVertices()
+
+        val triangleCount = (stackCount - 1) * sectorCount * 2
+
+        // Каждый треугольник - 3 вертекса
+        // Каждый вертекс - 3 координаты Float и 3 координаты нормали
+        val vertexDataSize = triangleCount * 3 * (POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT)
+
+        val vertexData = FloatArray(vertexDataSize)
+        val triangleIndices = IntArray(triangleElementCount)
+        val lineIndices = IntArray(lineElementsCount)
+
+        repeat(stackCount) { i ->
+
+            // Это v1 и v2 на рисунке ниже
+            vi1 = i * (sectorCount + 1)
+            vi2 = (i + 1) * (sectorCount + 1)
+
+            // 4 вертекса на сектор
+            //  v1--v3
+            //  |    |
+            //  v2--v4
+            repeat(sectorCount) { _ ->
+                val v1 = vertices[vi1]
+                val v2 = vertices[vi2]
+                val v3 = vertices[vi1 + 1]
+                val v4 = vertices[vi2 + 1]
+
+                when (i) {
+                    // Самый первый стек
+                    0 -> {
+                        val n = computeFaceNormal(v1.asVector, v2.asVector, v4.asVector)
+
+                        vertexData[k++] = v1.x
+                        vertexData[k++] = v1.y
+                        vertexData[k++] = v1.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v2.x
+                        vertexData[k++] = v2.y
+                        vertexData[k++] = v2.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v4.x
+                        vertexData[k++] = v4.y
+                        vertexData[k++] = v4.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        triangleIndices[ti++] = vi
+                        triangleIndices[ti++] = vi + 1
+                        triangleIndices[ti++] = vi + 2
+
+                        lineIndices[li++] = vi
+                        lineIndices[li++] = vi + 1
+                        vi += 3
+                    }
+                    // Последний стек
+                    (stackCount - 1) -> {
+
+                        val n = computeFaceNormal(v1.asVector, v2.asVector, v3.asVector)
+
+                        vertexData[k++] = v1.x
+                        vertexData[k++] = v1.y
+                        vertexData[k++] = v1.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v2.x
+                        vertexData[k++] = v2.y
+                        vertexData[k++] = v2.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v3.x
+                        vertexData[k++] = v3.y
+                        vertexData[k++] = v3.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        triangleIndices[ti++] = vi
+                        triangleIndices[ti++] = vi + 1
+                        triangleIndices[ti++] = vi + 2
+
+                        lineIndices[li++] = vi
+                        lineIndices[li++] = vi + 1
+                        lineIndices[li++] = vi
+                        lineIndices[li++] = vi + 2
+
+                        vi += 3
+                    }
+
+                    else -> {
+                        val n = computeFaceNormal(v1.asVector, v2.asVector, v3.asVector)
+
+                        vertexData[k++] = v1.x
+                        vertexData[k++] = v1.y
+                        vertexData[k++] = v1.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v2.x
+                        vertexData[k++] = v2.y
+                        vertexData[k++] = v2.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v3.x
+                        vertexData[k++] = v3.y
+                        vertexData[k++] = v3.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        vertexData[k++] = v4.x
+                        vertexData[k++] = v4.y
+                        vertexData[k++] = v4.z
+
+                        vertexData[k++] = n.x
+                        vertexData[k++] = n.y
+                        vertexData[k++] = n.z
+
+                        triangleIndices[ti++] = vi      // v1
+                        triangleIndices[ti++] = vi + 1  // v2
+                        triangleIndices[ti++] = vi + 2  // v3
+
+                        triangleIndices[ti++] = vi + 2  // v3
+                        triangleIndices[ti++] = vi + 1  // v2
+                        triangleIndices[ti++] = vi + 3  // v4
+
+                        lineIndices[li++] = vi       // v1,v2 вертикальная линия
+                        lineIndices[li++] = vi + 1
+                        lineIndices[li++] = vi       // v1,v3 горизонтальная линия
+                        lineIndices[li++] = vi + 2
+                        vi += 4
+                    }
+                }
+
+                vi1++
+                vi2++
+            }
+        }
+
+        return Data(vertexData, triangleIndices, lineIndices)
+    }
+
+    private fun computeFaceNormal(v1: Vector, v2: Vector, v3: Vector): Vector {
+        val v21 = v2 - v1
+        val v31 = v3 - v1
+        val norm = v31.crossProduct(v21)
+        return if (norm.length() > 0.000001f) norm.unit else Vector(0f, 0f, 0f)
     }
 
     /**
@@ -150,12 +354,13 @@ class Sphere(
      * индекса вертекса перемещал к следующему вертексу на том же горизонтальном уровне. Либо
      * на следующий горизонтальный уровень, если все вертексы текущего уровня пройдены.
      */
-    private fun buildVertices(): FloatArray {
+    private fun buildVertices(withNormals: Boolean = true): FloatArray {
         Logging.d("$TAG.buildVertices")
         // Количество вертексов
         val vertexCount = (stackCount + 1) * (sectorCount + 1)
         // Объем vertex data
-        val vertexDataSize = vertexCount * (POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT)
+        val normalComponentCount = if (withNormals) NORMAL_COMPONENT_COUNT else 0
+        val vertexDataSize = vertexCount * (POSITION_COMPONENT_COUNT + normalComponentCount)
 
         val floatArray = FloatArray(vertexDataSize)
 
@@ -181,9 +386,11 @@ class Sphere(
                 floatArray[index++] = z
 
                 // Нормаль к вертексу
-                floatArray[index++] = x * lengthInv
-                floatArray[index++] = y * lengthInv
-                floatArray[index++] = z * lengthInv
+                if (withNormals) {
+                    floatArray[index++] = x * lengthInv
+                    floatArray[index++] = y * lengthInv
+                    floatArray[index++] = z * lengthInv
+                }
             }
         }
 
@@ -263,6 +470,17 @@ class Sphere(
         Logging.d("$TAG.buildLines lineCount=$lineCount index=$index")
         return elements
     }
+
+    private fun getVertices(): List<Vertex> =
+        with(buildVertices(withNormals = false)) {
+            (0 until size / POSITION_COMPONENT_COUNT).map { i ->
+                Vertex(
+                    get(i * POSITION_COMPONENT_COUNT),
+                    get(i * POSITION_COMPONENT_COUNT + 1),
+                    get(i * POSITION_COMPONENT_COUNT + 2)
+                )
+            }
+        }
 
     companion object {
 
