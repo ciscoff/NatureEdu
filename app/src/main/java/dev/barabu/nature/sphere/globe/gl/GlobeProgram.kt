@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.gl
+package dev.barabu.nature.sphere.globe.gl
 
 import android.content.Context
 import android.opengl.GLES20.glGetAttribLocation
@@ -15,19 +15,19 @@ import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
-import dev.barabu.nature.sphere.domain.Sphere
+import dev.barabu.nature.sphere.globe.domain.GlobeSphere
 
-class SphereProgram(
+class GlobeProgram(
     context: Context,
     radius: Float,
     isFlat: Boolean,
-    vertexShaderResourceId: Int = R.raw.sphere_vertex_shader,
-    fragmentShaderResourceId: Int = R.raw.sphere_fragment_shader
+    vertexShaderResourceId: Int = R.raw.globe_vertex_shader,
+    fragmentShaderResourceId: Int = R.raw.globe_fragment_shader
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
-    override val model: Model = Sphere(radius = radius, isFlat = isFlat)
+    override val model: Model = GlobeSphere(radius = radius, isFlat = isFlat)
 
     private var uMvpMatrixDescriptor: Int =
         glGetUniformLocation(programDescriptor, U_MVP_MATRIX)
@@ -67,8 +67,8 @@ class SphereProgram(
         glUseProgram(0)
     }
 
-    fun draw(mode: Sphere.Mode, isFinal: Boolean) {
-        (model as Sphere).draw(mode)
+    fun draw(mode: GlobeSphere.Mode, isFinal: Boolean) {
+        (model as GlobeSphere).draw(mode)
         if (isFinal) {
             glUseProgram(0)
         }
@@ -140,7 +140,7 @@ class SphereProgram(
 
     companion object {
 
-        private const val TAG = "SphereProgram"
+        private const val TAG = "GlobeProgram"
 
         private const val A_POSITION = "a_Position"
         private const val A_NORMAL = "a_Normal"

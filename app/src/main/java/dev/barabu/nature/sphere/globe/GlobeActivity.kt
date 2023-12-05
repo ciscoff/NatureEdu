@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere
+package dev.barabu.nature.sphere.globe
 
 import android.opengl.GLSurfaceView
 import android.os.Bundle
@@ -6,19 +6,19 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.isActualGlEsSupporting
-import dev.barabu.nature.sphere.gl.SphereRenderer
+import dev.barabu.nature.sphere.globe.gl.GlobeRenderer
 
-class SphereActivity : AppCompatActivity() {
+class GlobeActivity : AppCompatActivity() {
 
     private lateinit var glSurfaceView: GLSurfaceView
 
-    private lateinit var renderer: SphereRenderer
+    private lateinit var renderer: GlobeRenderer
 
     private var isRendererSet = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        renderer = SphereRenderer(this)
+        renderer = GlobeRenderer(this)
 
         glSurfaceView = GLSurfaceView(this).apply {
             layoutParams = ViewGroup.LayoutParams(

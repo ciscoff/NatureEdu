@@ -1,8 +1,9 @@
-package dev.barabu.nature.sphere.domain.prototype
+package dev.barabu.nature.sphere.globe.domain.prototype
 
-import android.opengl.GLES20.GL_TRIANGLES
+import android.opengl.GLES20.GL_LINES
 import android.opengl.GLES20.GL_UNSIGNED_INT
 import android.opengl.GLES20.glDrawElements
+import android.opengl.GLES20.glLineWidth
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.Logging
 import dev.barabu.base.NORMAL_COMPONENT_COUNT
@@ -24,7 +25,7 @@ import kotlin.math.sin
  * Sectors - это вертикальные "дольки апельсина"
  *
  * Реализовано два способа представления сферы - сеткой треугольников и сеткой линий.
- * Для каждой реализации создается отдельный интанс Sphere, потому что один VAO не может
+ * Для каждой реализации создается отдельный интанс GlobeSphere, потому что один VAO не может
  * хранить несколько EBO.
  *
  * Как альтернатива - использовать один EBO и хранить в нем оба типа индексов, но не вперемешку,
@@ -43,7 +44,7 @@ import kotlin.math.sin
  * Итого линий: 2 * stackCount * sectorCount + stackCount - sectorCount
  * Итого индексов для рисования линий: 2 * lineCount
  */
-class PolygonSphere(
+class StrokeSphere(
     radius: Float,
     stacks: Int = DEFAULT_STACK_COUNT,
     sectors: Int = DEFAULT_SECTOR_COUNT
@@ -54,11 +55,17 @@ class PolygonSphere(
         else if (radius < 0) abs(radius)
         else radius
 
+
     private val stackCount = if (stacks < MIN_STACK_COUNT) MIN_STACK_COUNT else stacks
 
     private val sectorCount = if (sectors < MIN_SECTOR_COUNT) MIN_SECTOR_COUNT else sectors
 
+    private val lineCount = 2 * stackCount * sectorCount + stackCount - sectorCount
+
     private val triangleCount = 2 * sectorCount * (stackCount - 1)
+
+    // Количество индексов для отрисовки всех линий
+    private val lineElementsCount = lineCount * 2
 
     // Количество индексов для отрисовки всех треугольников
     private val triangleElementCount = triangleCount * 3
@@ -74,7 +81,11 @@ class PolygonSphere(
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
                 Attribute.Type.Position, Attribute.Type.Color -> {
-                    Triple(POSITION_COMPONENT_COUNT, 0, STRIDE)
+                    Triple(
+                        POSITION_COMPONENT_COUNT,
+                        0,
+                        STRIDE
+                    )
                 }
 
                 Attribute.Type.Normal -> {
@@ -92,7 +103,8 @@ class PolygonSphere(
 
     override fun draw() {
         vertexArray.bind()
-        glDrawElements(GL_TRIANGLES, triangleElementCount, GL_UNSIGNED_INT, 0)
+        glLineWidth(1.6f)
+        glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
         vertexArray.release()
     }
 
@@ -122,7 +134,6 @@ class PolygonSphere(
             val y = radius * sin(stackAngle)
 
             repeat(sectorCount + 1) { j ->
-                // Вокруг оси Y потому что 'x' получаем через cos
                 val sectorAngle = j * sectorStep  // от 0 до 2*PI
                 val x = xz * cos(sectorAngle)
                 // note: вот тут можно со знаком поиграться
@@ -143,54 +154,42 @@ class PolygonSphere(
         return floatArray
     }
 
-    private fun buildElements(): IntArray = buildPolygons()
+    private fun buildElements(): IntArray = buildLines()
 
-    // Генерим CCW индексы вертексов для треугольников. Вся сфера разбита на набор секторов,
-    // образованных пересечением горизонтальный и вертикальных линий. Точки пересечения - это
-    // вертексы. На рисунке ниже:
-    //  k1 - индекс первого вертекса сектора
-    //  k1+1 - индекс следующего вертекса на той же горизонтальной линии
-    //  k2 - индекс первого вертекса сектора на следующей горизонтальной линии
-    //  k2+1 - по аналогии
-    //
-    //     k1--k1+1
-    //     |  / |
-    //     | /  |
-    //     k2--k2+1
-    private fun buildPolygons(): IntArray {
-        val elements = IntArray(triangleElementCount)
+    /**
+     * На каждую линию по 2 индекса
+     */
+    private fun buildLines(): IntArray {
+        Logging.d("$TAG.buildLines")
+        val elements = IntArray(2 * lineCount)
 
         var index = 0
         repeat(stackCount) { i ->
-
             var k1 = i * (sectorCount + 1)  // индекс вертекса на текущем уровне
             var k2 = k1 + sectorCount + 1   // индекс вертекса на следующем уровне
 
             repeat(sectorCount) { j ->
 
+                // Вертикальная линия
+                elements[index++] = k1
+                elements[index++] = k2
+
+                // Горизонтальные линии для каждого сектора на всех уровнях кроме первого
                 if (i != 0) {
                     elements[index++] = k1
-                    elements[index++] = k2
                     elements[index++] = k1 + 1
                 }
-
-                if (i != (stackCount - 1)) {
-                    elements[index++] = k1 + 1
-                    elements[index++] = k2
-                    elements[index++] = k2 + 1
-                }
-
                 k1++
                 k2++
             }
         }
-
+        Logging.d("$TAG.buildLines lineCount=$lineCount index=$index")
         return elements
     }
 
     companion object {
 
-        private const val TAG = "Sphere"
+        private const val TAG = "GlobeSphere"
 
         private const val DEFAULT_STACK_COUNT = 18
         private const val DEFAULT_SECTOR_COUNT = 36

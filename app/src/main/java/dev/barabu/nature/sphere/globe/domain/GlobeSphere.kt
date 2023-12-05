@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.domain
+package dev.barabu.nature.sphere.globe.domain
 
 import android.opengl.GLES20.GL_LINES
 import android.opengl.GLES20.GL_TRIANGLES
@@ -43,7 +43,7 @@ import kotlin.math.sin
  * Итого линий: 2 * stackCount * sectorCount + stackCount - sectorCount
  * Итого индексов для рисования линий: 2 * lineCount
  */
-class Sphere(
+class GlobeSphere(
     radius: Float,
     stacks: Int = DEFAULT_STACK_COUNT,
     sectors: Int = DEFAULT_SECTOR_COUNT,
@@ -60,7 +60,7 @@ class Sphere(
      * Режим отрисовки.
      */
     enum class Mode {
-        Solid,
+        Polygon,
         Line,
         Both
     }
@@ -85,18 +85,18 @@ class Sphere(
     // Количество индексов для отрисовки всех треугольников
     private val triangleElementCount = triangleCount * 3
 
-    private val vertexArray: SphereVertexArray
+    private val vertexArray: GlobeVertexArray
 
     init {
         vertexArray = if (isFlat) {
             val data = buildVerticesFlat()
-            SphereVertexArray(
+            GlobeVertexArray(
                 VertexBuffer(data.vertices),
                 ElementBuffer(data.triangles),
                 ElementBuffer(data.lines)
             )
         } else {
-            SphereVertexArray(
+            GlobeVertexArray(
                 VertexBuffer(buildVertices()),
                 ElementBuffer(buildTriangles()),
                 ElementBuffer(buildLines())
@@ -141,7 +141,7 @@ class Sphere(
         vertexArray.bind()
 
         when (mode) {
-            Mode.Solid -> drawPolygons()
+            Mode.Polygon -> drawPolygons()
             Mode.Line -> drawLines()
             Mode.Both -> {
                 drawPolygons()
@@ -484,7 +484,7 @@ class Sphere(
 
     companion object {
 
-        private const val TAG = "Sphere"
+        private const val TAG = "GlobeSphere"
 
         private const val DEFAULT_STACK_COUNT = 18
         private const val DEFAULT_SECTOR_COUNT = 36

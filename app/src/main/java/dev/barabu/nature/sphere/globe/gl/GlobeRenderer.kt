@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.gl
+package dev.barabu.nature.sphere.globe.gl
 
 import android.content.Context
 import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
@@ -17,14 +17,14 @@ import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
 import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
-import dev.barabu.nature.sphere.domain.Sphere
+import dev.barabu.nature.sphere.globe.domain.GlobeSphere
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class SphereRenderer(private val context: Context) : Renderer {
+class GlobeRenderer(private val context: Context) : Renderer {
 
-    private lateinit var sphereProgram: SphereProgram
-    private lateinit var sphereProgram2: SphereProgram
+    private lateinit var globeProgram: GlobeProgram
+    private lateinit var globeProgram2: GlobeProgram
 
     private val modelMatrix = FloatArray(16)
     private val modelMatrix2 = FloatArray(16)
@@ -44,8 +44,8 @@ class SphereRenderer(private val context: Context) : Renderer {
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         glClearColor(0f, 0f, 0f, 1f)
 
-        sphereProgram = SphereProgram(context, radius = 1.0f, isFlat = true)
-        sphereProgram2 = SphereProgram(context, radius = 1.0f, isFlat = false)
+        globeProgram = GlobeProgram(context, radius = 1.0f, isFlat = true)
+        globeProgram2 = GlobeProgram(context, radius = 1.0f, isFlat = false)
 
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         glEnable(GL_DEPTH_TEST)
@@ -93,7 +93,7 @@ class SphereRenderer(private val context: Context) : Renderer {
     }
 
     private fun drawSphere() {
-        sphereProgram.apply {
+        globeProgram.apply {
             useProgram()
             bindMvpMatrixUniform(modelViewProjectionMatrix)
             bindModelMatrixUniform(modelMatrix)
@@ -117,14 +117,14 @@ class SphereRenderer(private val context: Context) : Renderer {
             bindDrawPolygonUniform(true)
             glEnable(GL_POLYGON_OFFSET_FILL)
             glPolygonOffset(1.0f, 1.0f)
-            draw(Sphere.Mode.Solid, false)
+            draw(GlobeSphere.Mode.Polygon, false)
             glDisable(GL_POLYGON_OFFSET_FILL)
 
             bindDrawPolygonUniform(false)
-            draw(Sphere.Mode.Line, true)
+            draw(GlobeSphere.Mode.Line, true)
         }
 
-        sphereProgram2.apply {
+        globeProgram2.apply {
             useProgram()
             bindMvpMatrixUniform(modelViewProjectionMatrix2)
             bindModelMatrixUniform(modelMatrix2)
@@ -148,11 +148,11 @@ class SphereRenderer(private val context: Context) : Renderer {
             bindDrawPolygonUniform(true)
             glEnable(GL_POLYGON_OFFSET_FILL)
             glPolygonOffset(1.0f, 1.0f)
-            draw(Sphere.Mode.Solid, false)
+            draw(GlobeSphere.Mode.Polygon, false)
             glDisable(GL_POLYGON_OFFSET_FILL)
 
             bindDrawPolygonUniform(false)
-            draw(Sphere.Mode.Line, true)
+            draw(GlobeSphere.Mode.Line, true)
         }
     }
 }
