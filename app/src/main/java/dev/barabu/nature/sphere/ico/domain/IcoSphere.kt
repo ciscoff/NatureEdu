@@ -1,6 +1,7 @@
 package dev.barabu.nature.sphere.ico.domain
 
 import android.opengl.GLES20.GL_LINES
+import android.opengl.GLES20.GL_TRIANGLES
 import android.opengl.GLES20.GL_TRIANGLE_FAN
 import android.opengl.GLES20.GL_TRIANGLE_STRIP
 import android.opengl.GLES20.GL_UNSIGNED_INT
@@ -8,16 +9,24 @@ import android.opengl.GLES20.glDrawElements
 import android.opengl.GLES20.glLineWidth
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.BYTES_PER_INT
+import dev.barabu.base.Logging
 import dev.barabu.base.NORMAL_COMPONENT_COUNT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
+import dev.barabu.base.domain.Vertex
 import dev.barabu.base.extentions.asVector
+import dev.barabu.base.extentions.toArray
+import dev.barabu.base.extentions.toIntArray
 import dev.barabu.base.geometry.Icosahedron
 import dev.barabu.base.geometry.Icosahedron.Companion.VERTICES_COUNT
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 
+
+/**
+ * Тестовые классы см. в dev(test) IcoBuilder.kt
+ */
 class IcoSphere(
     private val radius: Float,
     isFlat: Boolean = true
@@ -39,8 +48,58 @@ class IcoSphere(
 
     private val icosahedron = Icosahedron(radius)
 
+    /**
+     * Собираем сферу из ромбиков Icosahedron'а на 12 вертексах.
+     * Получаем массив вертексов для 20 треугольников. Каждый треугольник - 3 вертекса, всего 60
+     * вертексов. Все треугольники идут последовательно, каждый вертекс участвует только в одном
+     * треугольнике, поэтому индексы вертексов можно сразу использовать для рисования.
+     * Все треугольники clockwise.
+     */
+    private val icoSphere: Array<Vertex> by lazy {
+        Array(60) { Vertex(0f, 0f, 0f) }.also { vertices ->
+            var index = 0
+
+            //    00  00  00  00  00
+            //    /\  /\  /\  /\  /\
+            //   /  \/  \/  \/  \/  \
+            //  01--02--03--04--05--01  <-- upDiamonds (индексы вертексов в icosahedron.vertices)
+            //   \  /\  /\  /\  /\  /
+            //    \/  \/  \/  \/  \/
+            //    06  07  08  09  10
+            val upDiamonds = IntArray(5) { it + 1 } + 1
+
+            repeat(upDiamonds.size - 1) { i ->
+                vertices[index++] = icosahedron.vertices[upDiamonds[i]]
+                vertices[index++] = icosahedron.vertices[upDiamonds[i + 1]]
+                vertices[index++] = icosahedron.vertices[0]
+
+                vertices[index++] = icosahedron.vertices[upDiamonds[i]]
+                vertices[index++] = icosahedron.vertices[upDiamonds[i] + 5]
+                vertices[index++] = icosahedron.vertices[upDiamonds[i + 1]]
+            }
+
+            //    02  03  04  05  01  <-- это upDiamonds без первого элемента
+            //    /\  /\  /\  /\  /\
+            //   /  \/  \/  \/  \/  \
+            //  06--07--08--09--10--06  <-- lowDiamonds (индексы вертексов в icosahedron.vertices)
+            //   \  /\  /\  /\  /\  /
+            //    \/  \/  \/  \/  \/
+            //    11  11  11  11  11
+            val lowDiamonds = IntArray(5) { it + 6 } + 6
+            repeat(lowDiamonds.size - 1) { i ->
+                vertices[index++] = icosahedron.vertices[lowDiamonds[i]]
+                vertices[index++] = icosahedron.vertices[lowDiamonds[i + 1]]
+                vertices[index++] = icosahedron.vertices[upDiamonds[i + 1]]
+
+                vertices[index++] = icosahedron.vertices[lowDiamonds[i]]
+                vertices[index++] = icosahedron.vertices[11]
+                vertices[index++] = icosahedron.vertices[lowDiamonds[i + 1]]
+            }
+        }
+    }
+
     init {
-        val data = buildVerticesSmooth()
+        val data = buildSphereSmooth()
 
         vertexArray = if (isFlat) {
             IsoSphereVertexArray(
@@ -83,12 +142,10 @@ class IcoSphere(
      */
     private fun drawPolygons() {
         vertexArray.bindPolygons()
-        glDrawElements(GL_TRIANGLE_FAN, 7, GL_UNSIGNED_INT, TOP_TRIANGLE_FAN_OFFSET)
-        glDrawElements(GL_TRIANGLE_STRIP, 12, GL_UNSIGNED_INT, CENTER_TRIANGLE_STRIP_OFFSET)
-        glDrawElements(GL_TRIANGLE_FAN, 7, GL_UNSIGNED_INT, BOTTOM_TRIANGLE_FAN_OFFSET)
+        glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT, 0)
     }
 
-    private var lineElementsCount: Int = 0
+    private var lineElementsCount: Int = 120
 
     /**
      * Рисуем линии по сфере
@@ -133,10 +190,72 @@ class IcoSphere(
         for (i in 0 until ICOSAHEDRON_VERTICES_COUNT) {
 
         }
-
-
         return interleavedVertices
     }*/
+
+    private fun buildSphereSmooth(): Data {
+
+        // Это вертексы и нормали
+        val interleavedVertices = icoSphere.asSequence().map { vertex ->
+            val normal = vertex.asVector.unit
+            listOf(vertex.x, vertex.y, vertex.z, normal.x, normal.y, normal.z)
+        }.flatten().toList().toFloatArray()
+
+        // Это индексы вертексов для рисования треугольников
+        val triangles: IntArray = (0..icoSphere.lastIndex).toIntArray()
+
+        // Это индексы вертексов для рисования линий
+        val lines = mutableMapOf<ULong, List<Int>>()
+
+        triangles.asSequence()
+            .windowed(3, 3)
+            .map { li -> li.sorted() }
+            .forEach { li ->
+                var key: ULong = (li[1].toULong() shl 32) or li[0].toULong()
+                if (lines[key] == null) {
+                    lines[key] = listOf(li[0], li[1])
+                }
+                key = (li[2].toULong() shl 32) or li[0].toULong()
+                if (lines[key] == null) {
+                    lines[key] = listOf(li[0], li[2])
+                }
+                key = (li[2].toULong() shl 32) or li[1].toULong()
+                if (lines[key] == null) {
+                    lines[key] = listOf(li[1], li[2])
+                }
+            }
+
+        return Data(interleavedVertices, triangles, lines.values.toList().flatten().toIntArray())
+    }
+
+    // If subdivision=0, do nothing.
+    //         v1           //
+    //        / \           //
+    // newV1 *---* newV3    //
+    //      / \ / \         //
+    //    v2---*---v3       //
+    //        newV2         //
+//    private fun buildVerticesSmooth(val subdivision: Int = 1): Data {
+//        val vertices = icosahedron.vertices
+//
+//    }
+
+    /**
+     * Вставляем треугольник в треугольник [triangle] и возвращаем его вертексы.
+     * Разбиваем треугольник на 4 внутренних. Делаем обход вершин 0 -> 1 -> 2 -> 0
+     *
+     *             V00
+     *             / \
+     *    v.00.01 *---* v.02.00
+     *           / \ / \
+     *      v01 *---*---* V02
+     *           v.01.02
+     */
+//    private fun getInnerTriangle(triangle: Array<Vertex>): Array<String> {
+//        return (triangle + triangle[0]).asSequence().zipWithNext().mapIndexed { i, p ->
+//
+//        }.toArray(3)
+//    }
 
     /**
      * Здесь пока не используются текстуры поэтому вертексы на полюсах могут использоваться
@@ -160,7 +279,13 @@ class IcoSphere(
      *          \  /\  /\  /\  /\  /
      *           \/  \/  \/  \/  \/
      * 17        11  11  11  11  11
+     *
+     *  Потом отрисовка выполнялась вот так:
+     *   glDrawElements(GL_TRIANGLE_FAN, 7, GL_UNSIGNED_INT, TOP_TRIANGLE_FAN_OFFSET)
+     *   glDrawElements(GL_TRIANGLE_STRIP, 12, GL_UNSIGNED_INT, CENTER_TRIANGLE_STRIP_OFFSET)
+     *   glDrawElements(GL_TRIANGLE_FAN, 7, GL_UNSIGNED_INT, BOTTOM_TRIANGLE_FAN_OFFSET)
      */
+    @Deprecated("The first worked version")
     private fun buildVerticesSmooth(): Data {
         val vertices = icosahedron.vertices
 

@@ -49,8 +49,8 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         Matrix.setIdentityM(modelMatrix, 0)
 //        Matrix.translateM(modelMatrix, 0, 0f, 1.1f, 0f)
-        Matrix.rotateM(modelMatrix, 0, 30f, 0f, 0f, 1f)
-        Matrix.rotateM(modelMatrix, 0, 30f, 1f, 0f, 0f)
+//        Matrix.rotateM(modelMatrix, 0, 30f, 0f, 0f, 1f)
+//        Matrix.rotateM(modelMatrix, 0, 30f, 0f, 1f, 0f)
 
 //        Matrix.setIdentityM(modelMatrix2, 0)
 //        Matrix.translateM(modelMatrix2, 0, 0f, -1.1f, 0f)
