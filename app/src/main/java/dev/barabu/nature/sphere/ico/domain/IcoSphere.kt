@@ -2,14 +2,10 @@ package dev.barabu.nature.sphere.ico.domain
 
 import android.opengl.GLES20.GL_LINES
 import android.opengl.GLES20.GL_TRIANGLES
-import android.opengl.GLES20.GL_TRIANGLE_FAN
-import android.opengl.GLES20.GL_TRIANGLE_STRIP
 import android.opengl.GLES20.GL_UNSIGNED_INT
 import android.opengl.GLES20.glDrawElements
 import android.opengl.GLES20.glLineWidth
 import dev.barabu.base.BYTES_PER_FLOAT
-import dev.barabu.base.BYTES_PER_INT
-import dev.barabu.base.Logging
 import dev.barabu.base.NORMAL_COMPONENT_COUNT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
@@ -19,16 +15,22 @@ import dev.barabu.base.extentions.asVector
 import dev.barabu.base.extentions.toArray
 import dev.barabu.base.extentions.toIntArray
 import dev.barabu.base.geometry.Icosahedron
+import dev.barabu.base.geometry.Icosahedron.Companion.TRIANGLES_COUNT
 import dev.barabu.base.geometry.Icosahedron.Companion.VERTICES_COUNT
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
+import kotlin.math.pow
 
 
 /**
  * Тестовые классы см. в dev(test) IcoBuilder.kt
+ *
+ * [radius] - радиус окружности
+ * [subdivisions] - количество "скруглений" Icosahedron'а
  */
 class IcoSphere(
     private val radius: Float,
+    private val subdivisions: Int = 1,
     isFlat: Boolean = true
 ) : Model {
 
@@ -48,15 +50,22 @@ class IcoSphere(
 
     private val icosahedron = Icosahedron(radius)
 
+    /** Про формулу смотри в (test) PowerTests.kt */
+    private val trianglesCount = (TRIANGLES_COUNT * 2.0.pow(subdivisions * 2)).toInt()
+
+    private var trianglesElementsCount: Int = trianglesCount * 3
+
+    private var linesElementsCount: Int = 0
+
     /**
      * Собираем сферу из ромбиков Icosahedron'а на 12 вертексах.
      * Получаем массив вертексов для 20 треугольников. Каждый треугольник - 3 вертекса, всего 60
      * вертексов. Все треугольники идут последовательно, каждый вертекс участвует только в одном
      * треугольнике, поэтому индексы вертексов можно сразу использовать для рисования.
-     * Все треугольники clockwise.
+     * Все треугольники counter clockwise.
      */
     private val icoSphere: Array<Vertex> by lazy {
-        Array(60) { Vertex(0f, 0f, 0f) }.also { vertices ->
+        Array(TRIANGLES_COUNT * 3) { Vertex(0f, 0f, 0f) }.also { vertices ->
             var index = 0
 
             //    00  00  00  00  00
@@ -142,10 +151,8 @@ class IcoSphere(
      */
     private fun drawPolygons() {
         vertexArray.bindPolygons()
-        glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT, 0)
+        glDrawElements(GL_TRIANGLES, trianglesElementsCount, GL_UNSIGNED_INT, 0)
     }
-
-    private var lineElementsCount: Int = 120
 
     /**
      * Рисуем линии по сфере
@@ -153,7 +160,7 @@ class IcoSphere(
     private fun drawLines() {
         vertexArray.bindLines()
         glLineWidth(1.2f)
-        glDrawElements(GL_LINES, lineElementsCount, GL_UNSIGNED_INT, 0)
+        glDrawElements(GL_LINES, linesElementsCount, GL_UNSIGNED_INT, 0)
     }
 
     override fun bindAttributes(attributes: List<Attribute>) {
@@ -195,50 +202,64 @@ class IcoSphere(
 
     private fun buildSphereSmooth(): Data {
 
+        val sphere = subdivideSphere(icoSphere, subdivisions)
+
         // Это вертексы и нормали
-        val interleavedVertices = icoSphere.asSequence().map { vertex ->
+        val interleavedVertices = sphere.asSequence().map { vertex ->
             val normal = vertex.asVector.unit
             listOf(vertex.x, vertex.y, vertex.z, normal.x, normal.y, normal.z)
         }.flatten().toList().toFloatArray()
 
         // Это индексы вертексов для рисования треугольников
-        val triangles: IntArray = (0..icoSphere.lastIndex).toIntArray()
+        val triangleElements: IntArray = (0..sphere.lastIndex).toIntArray()
 
         // Это индексы вертексов для рисования линий
         val lines = mutableMapOf<ULong, List<Int>>()
 
-        triangles.asSequence()
-            .windowed(3, 3)
-            .map { li -> li.sorted() }
-            .forEach { li ->
-                var key: ULong = (li[1].toULong() shl 32) or li[0].toULong()
+        triangleElements.asSequence()
+            .windowed(3, 3)  // собираем треугольник из трех индексов
+            .map { list -> list.sorted() }  // сортируем индексы по возрастанию
+            // здесь пытаемся сохранять уникальные линии, чтобы не дублировать,
+            // но сейчас это не работает, потому что нет shared вертексов.
+            .forEach { list ->
+                var key: ULong = (list[1].toULong() shl 32) or list[0].toULong()
                 if (lines[key] == null) {
-                    lines[key] = listOf(li[0], li[1])
+                    lines[key] = listOf(list[0], list[1])
                 }
-                key = (li[2].toULong() shl 32) or li[0].toULong()
+                key = (list[2].toULong() shl 32) or list[0].toULong()
                 if (lines[key] == null) {
-                    lines[key] = listOf(li[0], li[2])
+                    lines[key] = listOf(list[0], list[2])
                 }
-                key = (li[2].toULong() shl 32) or li[1].toULong()
+                key = (list[2].toULong() shl 32) or list[1].toULong()
                 if (lines[key] == null) {
-                    lines[key] = listOf(li[1], li[2])
+                    lines[key] = listOf(list[1], list[2])
                 }
             }
 
-        return Data(interleavedVertices, triangles, lines.values.toList().flatten().toIntArray())
+        val lineElements = lines.values.flatten().toIntArray()
+        linesElementsCount = lineElements.size
+        return Data(interleavedVertices, triangleElements, lineElements)
     }
 
-    // If subdivision=0, do nothing.
-    //         v1           //
-    //        / \           //
-    // newV1 *---* newV3    //
-    //      / \ / \         //
-    //    v2---*---v3       //
-    //        newV2         //
-//    private fun buildVerticesSmooth(val subdivision: Int = 1): Data {
-//        val vertices = icosahedron.vertices
-//
-//    }
+    /**
+     * Разделяем каждый треугольник поверхности сферы [sphere] на 4 треугольника. Параметр
+     * [level] содержит количество проходов деления. Проходы выполняются рекурсивно. После
+     * каждого прохода количество вертексов возрастает в 4 раза по сравнению с предыдущим
+     * уровнем рекурсии.
+     */
+    private fun subdivideSphere(sphere: Array<Vertex>, level: Int = 1): Array<Vertex> {
+        // base case
+        if (level <= 0) return sphere
+
+        val subdividedSphere = sphere.asSequence()
+            .windowed(3, 3) // берем по одному треугольнику
+            .map { outerTriangle ->    // разделяем его на 4 треугольника
+                val innerTriangle = getInnerTriangle(outerTriangle)
+                zipTriangles(outerTriangle, innerTriangle)
+            }.flatten().toArray(sphere.size * 4)
+
+        return subdivideSphere(subdividedSphere, level - 1)
+    }
 
     /**
      * Вставляем треугольник в треугольник [triangle] и возвращаем его вертексы.
@@ -246,16 +267,40 @@ class IcoSphere(
      *
      *             V00
      *             / \
-     *    v.00.01 *---* v.02.00
+     *         v1 *---* v2
      *           / \ / \
      *      v01 *---*---* V02
-     *           v.01.02
+     *             v1
      */
-//    private fun getInnerTriangle(triangle: Array<Vertex>): Array<String> {
-//        return (triangle + triangle[0]).asSequence().zipWithNext().mapIndexed { i, p ->
-//
-//        }.toArray(3)
-//    }
+    private fun getInnerTriangle(triangle: List<Vertex>): List<Vertex> =
+        // Обход v1 -> v2, v2 -> v3, v3 -> v1
+        (triangle + triangle[0])
+            .asSequence()
+            .zipWithNext()
+            .map { pair -> getMiddleVertex(pair.first, pair.second, radius) }
+            .toList()
+
+    /**
+     *              V0
+     *             / \
+     *         v0 *---* v2
+     *           / \ / \
+     *       v1 *---*---* V2
+     *             v1
+     */
+    private fun zipTriangles(outer: List<Vertex>, inner: List<Vertex>): List<Vertex> =
+        listOf(
+            outer[0], inner[0], inner[2],
+            outer[1], inner[1], inner[0],
+            outer[2], inner[2], inner[1],
+            inner[0], inner[1], inner[2]
+        )
+
+    private fun getMiddleVertex(v1: Vertex, v2: Vertex, length: Float): Vertex {
+        val tmp = v1.asVector + v2.asVector
+        val scaleFactor = length / tmp.length()
+        return Vertex(tmp.x * scaleFactor, tmp.y * scaleFactor, tmp.z * scaleFactor)
+    }
 
     /**
      * Здесь пока не используются текстуры поэтому вертексы на полюсах могут использоваться
@@ -307,7 +352,7 @@ class IcoSphere(
             listOf(6, 7, 7, 8, 8, 9, 9, 10, 10, 6),
         ).flatten().toIntArray()
 
-        lineElementsCount = lineIndices.size
+        linesElementsCount = lineIndices.size
 
         var j = 0
 
@@ -333,10 +378,5 @@ class IcoSphere(
 
         private const val STRIDE =
             (POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT) * BYTES_PER_FLOAT
-
-        // Байтовые смещения в буфере индексов
-        private const val TOP_TRIANGLE_FAN_OFFSET = 0
-        private const val BOTTOM_TRIANGLE_FAN_OFFSET = 7 * BYTES_PER_INT
-        private const val CENTER_TRIANGLE_STRIP_OFFSET = 14 * BYTES_PER_INT
     }
 }

@@ -55,6 +55,8 @@ class Icosahedron(val radius: Float) {
         // Всего вертексов в базовом Icosahedron'е
         const val VERTICES_COUNT = 12
 
+        const val TRIANGLES_COUNT = 20
+
         // Шаг долготы 72 градуса
         private const val H_ANGLE = PI.toFloat() / 180 * 72
 

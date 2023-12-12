@@ -13,8 +13,9 @@ import dev.barabu.nature.sphere.ico.domain.IcoSphere
 
 class IcoSphereProgram(
     context: Context,
-    radius: Float,
     isFlat: Boolean,
+    subdivisions: Int = 1,
+    radius: Float = 1.0f,
     vertexShaderResourceId: Int = R.raw.icosphere_vertex_shader,
     fragmentShaderResourceId: Int = R.raw.icosphere_fragment_shader
 ) : ShaderProgram(
@@ -46,7 +47,8 @@ class IcoSphereProgram(
     private var aNormalDescriptor: Int =
         GLES20.glGetAttribLocation(programDescriptor, A_NORMAL)
 
-    override val model: Model = IcoSphere(radius = 1f, isFlat = isFlat)
+    override val model: Model =
+        IcoSphere(radius = radius, subdivisions = subdivisions, isFlat = isFlat)
 
     init {
         model.bindAttributes(

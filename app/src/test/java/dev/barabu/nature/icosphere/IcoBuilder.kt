@@ -14,7 +14,8 @@ private val icosahedron = Array(12) { i -> "V${"%02d".format(i)}" }
  * Сфера на базе Icosahedron.
  * Это массив вертексов для 20 треугольников. Каждый треугольник - 3 вертекса, всего 60 вертексов.
  * Все треугольники идут последовательно, каждый вертекс участвует только в одном треугольнике,
- * поэтому индексы вертексов можно сразу использовать для рисования. Все треугольники clockwise.
+ * поэтому индексы вертексов можно сразу использовать для рисования.
+ * Все треугольники counter clockwise.
  */
 private val sphere: Array<String> by lazy {
     Array(60) { "" }.also { arr ->
@@ -63,7 +64,7 @@ private val sphere: Array<String> by lazy {
  * Вручную расставляем вершины внутреннего треугольника, но это может приводить к ошибке,
  * потому что мы не знаем между каких вершин внешнего треугольника лежит вершина внутреннего.
  * Поэтому сюда надо передавать заранее подготовленные треугольники. Например (V00, V01, V02)
- * и (v.00.01, v.01.02, v.02.00). То есть оба clockwise и первая вершина внутреннего
+ * и (v.00.01, v.01.02, v.02.00). То есть оба counter clockwise и первая вершина внутреннего
  * треугольника лежит между первой и второй вершинами внешнего треугольника.
  *
  *             V00
@@ -91,7 +92,7 @@ private fun zipTriangles(outer: Array<String>, inner: Array<String>): Array<Stri
  *           v.01.02
  */
 private fun getInnerTriangle(triangle: Array<String>): Array<String> {
-    return (triangle + triangle[0]).asSequence().zipWithNext().mapIndexed { i, p ->
+    return (triangle + triangle[0]).asSequence().zipWithNext().mapIndexed { _, p ->
         "v.${p.first.drop(1)}.${p.second.drop(1)}"
     }.toArray(3)
 }

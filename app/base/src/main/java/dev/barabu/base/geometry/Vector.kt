@@ -11,6 +11,8 @@ class Vector(
 
     operator fun minus(other: Vector): Vector = Vector(x - other.x, y - other.y, z - other.z)
 
+    operator fun plus(other: Vector): Vector = Vector(x + other.x, y + other.y, z + other.z)
+
     val r: Float get() = x
 
     val g: Float get() = y

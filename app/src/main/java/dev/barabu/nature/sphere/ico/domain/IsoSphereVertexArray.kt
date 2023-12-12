@@ -2,7 +2,6 @@ package dev.barabu.nature.sphere.ico.domain
 
 import android.opengl.GLES30
 import dev.barabu.base.INVALID_DESCRIPTOR
-import dev.barabu.base.domain.Vertex
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 
