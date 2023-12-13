@@ -17,7 +17,7 @@ import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
 import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
-import dev.barabu.nature.sphere.globe.domain.GlobeSphere
+import dev.barabu.nature.sphere.Mode
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -117,11 +117,11 @@ class GlobeRenderer(private val context: Context) : Renderer {
             bindDrawPolygonUniform(true)
             glEnable(GL_POLYGON_OFFSET_FILL)
             glPolygonOffset(1.0f, 1.0f)
-            draw(GlobeSphere.Mode.Polygon, false)
+            draw(Mode.Polygon, false)
             glDisable(GL_POLYGON_OFFSET_FILL)
 
             bindDrawPolygonUniform(false)
-            draw(GlobeSphere.Mode.Line, true)
+            draw(Mode.Line, true)
         }
 
         globeProgram2.apply {
@@ -148,11 +148,11 @@ class GlobeRenderer(private val context: Context) : Renderer {
             bindDrawPolygonUniform(true)
             glEnable(GL_POLYGON_OFFSET_FILL)
             glPolygonOffset(1.0f, 1.0f)
-            draw(GlobeSphere.Mode.Polygon, false)
+            draw(Mode.Polygon, false)
             glDisable(GL_POLYGON_OFFSET_FILL)
 
             bindDrawPolygonUniform(false)
-            draw(GlobeSphere.Mode.Line, true)
+            draw(Mode.Line, true)
         }
     }
 }

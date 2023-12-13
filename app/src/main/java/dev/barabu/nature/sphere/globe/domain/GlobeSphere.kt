@@ -16,6 +16,7 @@ import dev.barabu.base.extentions.asVector
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
+import dev.barabu.nature.sphere.Mode
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -55,15 +56,6 @@ class GlobeSphere(
         val triangles: IntArray,
         val lines: IntArray
     )
-
-    /**
-     * Режим отрисовки.
-     */
-    enum class Mode {
-        Polygon,
-        Line,
-        Both
-    }
 
     private val radius =
         if (radius == 0f) throw IllegalArgumentException("radius cannot be 0.0")

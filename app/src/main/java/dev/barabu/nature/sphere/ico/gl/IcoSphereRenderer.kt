@@ -6,13 +6,14 @@ import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
-import dev.barabu.nature.sphere.ico.domain.IcoSphere
+import dev.barabu.nature.sphere.Mode
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
-    private lateinit var program: IcoSphereProgram
+    private lateinit var programFlat: IcoSphereProgram
+    private lateinit var programSmooth: IcoSphereProgram
 
     private val modelMatrix = FloatArray(16)
     private val modelMatrix2 = FloatArray(16)
@@ -27,7 +28,8 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val viewerPosition = Point(-1.0f, 15.0f, 7.0f)
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
-        program = IcoSphereProgram(context, radius = 1.0f, subdivisions = 4, isFlat = true)
+        programFlat = IcoSphereProgram(context, radius = 1.0f, subdivisions = 3, isFlat = true)
+        programSmooth = IcoSphereProgram(context, radius = 1.0f, subdivisions = 3, isFlat = false)
 
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
@@ -46,17 +48,17 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
         Matrix.setIdentityM(modelMatrix, 0)
-//        Matrix.translateM(modelMatrix, 0, 0f, 1.1f, 0f)
-        Matrix.rotateM(modelMatrix, 0, 30f, 0f, 0f, 1f)
-        Matrix.rotateM(modelMatrix, 0, 30f, 0f, 1f, 0f)
+        Matrix.translateM(modelMatrix, 0, 0f, 1.1f, 0f)
+        Matrix.rotateM(modelMatrix, 0, 45f, 0f, 0f, 1f)
+        Matrix.rotateM(modelMatrix, 0, 45f, 1f, 0f, 0f)
 
-//        Matrix.setIdentityM(modelMatrix2, 0)
-//        Matrix.translateM(modelMatrix2, 0, 0f, -1.1f, 0f)
-//        Matrix.rotateM(modelMatrix2, 0, 45f, 0f, 0f, 1f)
-//        Matrix.rotateM(modelMatrix2, 0, 45f, 1f, 0f, 0f)
+        Matrix.setIdentityM(modelMatrix2, 0)
+        Matrix.translateM(modelMatrix2, 0, 0f, -1.1f, 0f)
+        Matrix.rotateM(modelMatrix2, 0, 45f, 0f, 0f, 1f)
+        Matrix.rotateM(modelMatrix2, 0, 45f, 1f, 0f, 0f)
 
         Matrix.multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0)
-//        Matrix.multiplyMM(modelViewProjectionMatrix2, 0, viewProjectionMatrix, 0, modelMatrix2, 0)
+        Matrix.multiplyMM(modelViewProjectionMatrix2, 0, viewProjectionMatrix, 0, modelMatrix2, 0)
     }
 
     override fun onDrawFrame(p0: GL10?) {
@@ -65,7 +67,7 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
 
     private fun drawSphere() {
-        program.apply {
+        programFlat.apply {
             useProgram()
             bindMvpMatrixUniform(modelViewProjectionMatrix)
             bindModelMatrixUniform(modelMatrix)
@@ -89,11 +91,42 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer {
             bindDrawPolygonUniform(true)
             GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
             GLES20.glPolygonOffset(1.0f, 1.0f)
-            draw(IcoSphere.Mode.Polygon, false)
+            draw(Mode.Polygon, false)
             GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
 
             bindDrawPolygonUniform(false)
-            draw(IcoSphere.Mode.Line, true)
+            draw(Mode.Line, true)
+        }
+
+        programSmooth.apply {
+            useProgram()
+            bindMvpMatrixUniform(modelViewProjectionMatrix2)
+            bindModelMatrixUniform(modelMatrix2)
+            bindLightPositionUniform(lightPosition)
+            bindViewerPositionUniform(viewerPosition)
+            bindColorUniform(Vector(0f, 0f, 0f))
+
+            bindMaterialUniform(
+                ambient = Vector(0.7f, 0.7f, 0.7f),
+                diffuse = Vector(0.7f, 0.7f, 0.7f),
+                specular = Vector(1.0f, 1.0f, 1.0f),
+                shininess = 32f
+            )
+
+            bindLightUniform(
+                ambient = Vector(0.7f, 0.7f, 0.7f),
+                diffuse = Vector(0.7f, 0.7f, 0.7f),
+                specular = Vector(1.0f, 1.0f, 1.0f),
+            )
+
+            bindDrawPolygonUniform(true)
+            GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
+            GLES20.glPolygonOffset(1.0f, 1.0f)
+            draw(Mode.Polygon, false)
+            GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
+
+            bindDrawPolygonUniform(false)
+            draw(Mode.Line, true)
         }
     }
 }

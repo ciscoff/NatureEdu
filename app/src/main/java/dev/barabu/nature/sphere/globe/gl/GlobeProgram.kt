@@ -15,6 +15,7 @@ import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
+import dev.barabu.nature.sphere.Mode
 import dev.barabu.nature.sphere.globe.domain.GlobeSphere
 
 class GlobeProgram(
@@ -67,7 +68,7 @@ class GlobeProgram(
         glUseProgram(0)
     }
 
-    fun draw(mode: GlobeSphere.Mode, isFinal: Boolean) {
+    fun draw(mode: Mode, isFinal: Boolean) {
         (model as GlobeSphere).draw(mode)
         if (isFinal) {
             glUseProgram(0)

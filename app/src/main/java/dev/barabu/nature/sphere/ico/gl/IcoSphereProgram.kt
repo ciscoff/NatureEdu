@@ -9,6 +9,7 @@ import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
+import dev.barabu.nature.sphere.Mode
 import dev.barabu.nature.sphere.ico.domain.IcoSphere
 
 class IcoSphereProgram(
@@ -64,7 +65,7 @@ class IcoSphereProgram(
         GLES20.glUseProgram(0)
     }
 
-    fun draw(mode: IcoSphere.Mode, isFinal: Boolean) {
+    fun draw(mode: Mode, isFinal: Boolean) {
         (model as IcoSphere).draw(mode)
         if (isFinal) {
             GLES20.glUseProgram(0)
