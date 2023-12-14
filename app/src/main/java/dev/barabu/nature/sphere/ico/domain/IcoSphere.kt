@@ -10,6 +10,7 @@ import dev.barabu.base.NORMAL_COMPONENT_COUNT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
+import dev.barabu.base.domain.Tex
 import dev.barabu.base.domain.Vertex
 import dev.barabu.base.extentions.asVector
 import dev.barabu.base.geometry.Icosahedron
@@ -110,7 +111,7 @@ class IcoSphere(
         vertexArray.bind()
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
-                Attribute.Type.Position, Attribute.Type.Color -> {
+                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Tex -> {
                     Triple(
                         POSITION_COMPONENT_COUNT,
                         0,

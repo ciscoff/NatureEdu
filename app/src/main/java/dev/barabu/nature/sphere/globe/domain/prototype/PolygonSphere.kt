@@ -73,7 +73,7 @@ class PolygonSphere(
         vertexArray.bind()
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
-                Attribute.Type.Position, Attribute.Type.Color -> {
+                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Tex -> {
                     Triple(POSITION_COMPONENT_COUNT, 0, STRIDE)
                 }
 
