@@ -24,8 +24,11 @@ class IcoSphereProgram(
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
 
-    private var uMvpMatrixDescriptor: Int =
-        GLES20.glGetUniformLocation(programDescriptor, U_MVP_MATRIX)
+    private var uViewMatrixDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_VIEW_MATRIX)
+
+    private var uProjMatrixDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_PROJECTION_MATRIX)
 
     private var uModelMatrixDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_MODEL_MATRIX)
@@ -42,8 +45,14 @@ class IcoSphereProgram(
     private var uDrawPolygonDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_DRAW_POLYGON)
 
+    private var uTexUnitDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_TEX_UNIT)
+
     private val aPositionDescriptor: Int =
         GLES20.glGetAttribLocation(programDescriptor, A_POSITION)
+
+    private val aTexPositionDescriptor: Int =
+        GLES20.glGetAttribLocation(programDescriptor, A_TEX_POSITION)
 
     private var aNormalDescriptor: Int =
         GLES20.glGetAttribLocation(programDescriptor, A_NORMAL)
@@ -55,7 +64,8 @@ class IcoSphereProgram(
         model.bindAttributes(
             listOf(
                 Attribute(aPositionDescriptor, Attribute.Type.Position),
-                Attribute(aNormalDescriptor, Attribute.Type.Normal)
+                Attribute(aNormalDescriptor, Attribute.Type.Normal),
+                Attribute(aTexPositionDescriptor, Attribute.Type.Tex)
             )
         )
     }
@@ -76,12 +86,16 @@ class IcoSphereProgram(
         GLES20.glUniform3f(uColorDescriptor, color.r, color.g, color.b)
     }
 
-    fun bindMvpMatrixUniform(matrix: FloatArray) {
-        GLES20.glUniformMatrix4fv(uMvpMatrixDescriptor, 1, false, matrix, 0)
-    }
-
     fun bindModelMatrixUniform(matrix: FloatArray) {
         GLES20.glUniformMatrix4fv(uModelMatrixDescriptor, 1, false, matrix, 0)
+    }
+
+    fun bindViewMatrixUniform(matrix: FloatArray) {
+        GLES20.glUniformMatrix4fv(uViewMatrixDescriptor, 1, false, matrix, 0)
+    }
+
+    fun bindProjMatrixUniform(matrix: FloatArray) {
+        GLES20.glUniformMatrix4fv(uProjMatrixDescriptor, 1, false, matrix, 0)
     }
 
     fun bindLightPositionUniform(position: Point) {
@@ -139,14 +153,23 @@ class IcoSphereProgram(
         }
     }
 
+    fun bindTexUniform(textureId: Int) {
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
+        GLES20.glUniform1i(uTexUnitDescriptor, 0)
+    }
+
     companion object {
         private const val A_POSITION = "a_Position"
+        private const val A_TEX_POSITION = "a_TexPos"
         private const val A_NORMAL = "a_Normal"
-        private const val U_MVP_MATRIX = "u_MvpMatrix"
         private const val U_MODEL_MATRIX = "u_ModelMatrix"
         private const val U_COLOR = "u_Color"
         private const val U_DRAW_POLYGON = "u_DrawPolygon"
         private const val U_LIGHT_POSITION = "u_LightPos"
         private const val U_VIEWER_POSITION = "u_ViewerPos"
+        private const val U_TEX_UNIT = "u_TexUnit"
+        private const val U_VIEW_MATRIX = "u_ViewMatrix"
+        private const val U_PROJECTION_MATRIX = "u_ProjMatrix"
     }
 }

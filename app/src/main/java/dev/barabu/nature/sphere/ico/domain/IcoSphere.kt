@@ -8,11 +8,13 @@ import android.opengl.GLES20.glLineWidth
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.NORMAL_COMPONENT_COUNT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
+import dev.barabu.base.TEX_COMPONENT_COUNT
 import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
 import dev.barabu.base.domain.Tex
 import dev.barabu.base.domain.Vertex
 import dev.barabu.base.extentions.asVector
+import dev.barabu.base.extentions.serialized
 import dev.barabu.base.geometry.Icosahedron
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ElementBuffer
@@ -89,15 +91,14 @@ class IcoSphere(
     }
 
     private fun buildVertexDataSmooth(vertex: Vertex): List<Float> {
-        val normal = vertex.asVector.unit
-        return listOf(vertex.x, vertex.y, vertex.z, normal.x, normal.y, normal.z)
+        return vertex.serialized
     }
 
     private fun buildVertexDataFlat(vertices: List<Vertex>): List<Float> {
         val normal = computeFaceNormal(vertices)
-        return vertices.asSequence().map { vertex ->
-            listOf(vertex.x, vertex.y, vertex.z, normal.x, normal.y, normal.z)
-        }.flatten().toList()
+        return vertices
+            .asSequence().map { vertex -> vertex.copy(normal = normal).serialized }
+            .flatten().toList()
     }
 
     private fun computeFaceNormal(vertices: List<Vertex>): Vector {
@@ -111,7 +112,7 @@ class IcoSphere(
         vertexArray.bind()
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
-                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Tex -> {
+                Attribute.Type.Position, Attribute.Type.Color -> {
                     Triple(
                         POSITION_COMPONENT_COUNT,
                         0,
@@ -123,6 +124,14 @@ class IcoSphere(
                     Triple(
                         NORMAL_COMPONENT_COUNT,
                         POSITION_COMPONENT_COUNT * BYTES_PER_FLOAT,
+                        STRIDE
+                    )
+                }
+
+                Attribute.Type.Tex -> {
+                    Triple(
+                        TEX_COMPONENT_COUNT,
+                        (POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT) * BYTES_PER_FLOAT,
                         STRIDE
                     )
                 }
@@ -188,23 +197,92 @@ class IcoSphere(
      */
     private fun buildIcoSphereSmooth() {
         with(icoSphere) {
-            repeat(5) { add(icosahedron.vertices[0]) }
 
-            add(icosahedron.vertices[1])
-            add(icosahedron.vertices[2])
-            add(icosahedron.vertices[3])
-            add(icosahedron.vertices[4])
-            add(icosahedron.vertices[5])
-            add(icosahedron.vertices[1])
+            var normal = icosahedron.vertices[0].asVector.unit
+            repeat(5) { i ->
+                val tex = Tex((i * 2 + 1) * S_STEP, 0f)
+                add(icosahedron.vertices[0].copy(normal = normal, tex = tex))
+            }
 
-            add(icosahedron.vertices[6])
-            add(icosahedron.vertices[7])
-            add(icosahedron.vertices[8])
-            add(icosahedron.vertices[9])
-            add(icosahedron.vertices[10])
-            add(icosahedron.vertices[6])
+            add(
+                icosahedron.vertices[1].copy(
+                    normal = icosahedron.vertices[1].asVector.unit,
+                    tex = Tex(0f, T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[2].copy(
+                    normal = icosahedron.vertices[2].asVector.unit,
+                    tex = Tex(2 * S_STEP, T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[3].copy(
+                    normal = icosahedron.vertices[3].asVector.unit,
+                    tex = Tex(4 * S_STEP, T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[4].copy(
+                    normal = icosahedron.vertices[4].asVector.unit,
+                    tex = Tex(6 * S_STEP, T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[5].copy(
+                    normal = icosahedron.vertices[5].asVector.unit,
+                    tex = Tex(8 * S_STEP, T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[1].copy(
+                    normal = icosahedron.vertices[1].asVector.unit,
+                    tex = Tex(10 * S_STEP, T_STEP)
+                )
+            )
 
-            repeat(5) { add(icosahedron.vertices[11]) }
+            add(
+                icosahedron.vertices[6].copy(
+                    normal = icosahedron.vertices[6].asVector.unit,
+                    tex = Tex(S_STEP, 2 * T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[7].copy(
+                    normal = icosahedron.vertices[7].asVector.unit,
+                    tex = Tex(3 * S_STEP, 2 * T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[8].copy(
+                    normal = icosahedron.vertices[8].asVector.unit,
+                    tex = Tex(5 * S_STEP, 2 * T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[9].copy(
+                    normal = icosahedron.vertices[9].asVector.unit,
+                    tex = Tex(7 * S_STEP, 2 * T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[10].copy(
+                    normal = icosahedron.vertices[10].asVector.unit,
+                    tex = Tex(9 * S_STEP, 2 * T_STEP)
+                )
+            )
+            add(
+                icosahedron.vertices[6].copy(
+                    normal = icosahedron.vertices[6].asVector.unit,
+                    tex = Tex(11 * S_STEP, 2 * T_STEP)
+                )
+            )
+
+            normal = icosahedron.vertices[11].asVector.unit
+            repeat(5) { i ->
+                val tex = Tex((i * 2 + 2) * S_STEP, 3 * T_STEP)
+                add(icosahedron.vertices[11].copy(normal = normal, tex = tex))
+            }
         }
     }
 
@@ -229,13 +307,37 @@ class IcoSphere(
 
         with(icoSphere) {
             repeat(upDiamonds.size - 1) { i ->
-                add(icosahedron.vertices[upDiamonds[i]])
-                add(icosahedron.vertices[upDiamonds[i + 1]])
-                add(icosahedron.vertices[0])
+                add(
+                    icosahedron.vertices[upDiamonds[i]].copy(
+                        tex = Tex((2 * i) * S_STEP, T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[upDiamonds[i + 1]].copy(
+                        tex = Tex((2 * i + 2) * S_STEP, T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[0].copy(
+                        tex = Tex((i * 2 + 1) * S_STEP, 0f)
+                    )
+                )
 
-                add(icosahedron.vertices[upDiamonds[i]])
-                add(icosahedron.vertices[upDiamonds[i] + 5])
-                add(icosahedron.vertices[upDiamonds[i + 1]])
+                add(
+                    icosahedron.vertices[upDiamonds[i]].copy(
+                        tex = Tex((2 * i) * S_STEP, T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[upDiamonds[i] + 5].copy(
+                        tex = Tex((2 * i + 1) * S_STEP, 2 * T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[upDiamonds[i + 1]].copy(
+                        tex = Tex((2 * i + 2) * S_STEP, T_STEP)
+                    )
+                )
             }
         }
 
@@ -251,13 +353,37 @@ class IcoSphere(
         val lowDiamonds = IntArray(5) { it + 6 } + 6
         with(icoSphere) {
             repeat(lowDiamonds.size - 1) { i ->
-                add(icosahedron.vertices[lowDiamonds[i]])
-                add(icosahedron.vertices[lowDiamonds[i + 1]])
-                add(icosahedron.vertices[upDiamonds[i + 1]])
+                add(
+                    icosahedron.vertices[lowDiamonds[i]].copy(
+                        tex = Tex((2 * i + 1) * S_STEP, 2 * T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[lowDiamonds[i + 1]].copy(
+                        tex = Tex((2 * i + 3) * S_STEP, 2 * T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[upDiamonds[i + 1]].copy(
+                        tex = Tex((2 * i + 2) * S_STEP, T_STEP)
+                    )
+                )
 
-                add(icosahedron.vertices[lowDiamonds[i]])
-                add(icosahedron.vertices[11])
-                add(icosahedron.vertices[lowDiamonds[i + 1]])
+                add(
+                    icosahedron.vertices[lowDiamonds[i]].copy(
+                        tex = Tex((2 * i + 1) * S_STEP, 2 * T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[11].copy(
+                        tex = Tex((2 * i + 2) * S_STEP, T_STEP)
+                    )
+                )
+                add(
+                    icosahedron.vertices[lowDiamonds[i + 1]].copy(
+                        tex = Tex((2 * i + 3) * S_STEP, 2 * T_STEP)
+                    )
+                )
             }
         }
     }
@@ -417,7 +543,11 @@ class IcoSphere(
     private fun getMiddleVertex(v1: Vertex, v2: Vertex, length: Float): Vertex {
         val tmp = v1.asVector + v2.asVector
         val scaleFactor = length / tmp.length()
-        return Vertex(tmp.x * scaleFactor, tmp.y * scaleFactor, tmp.z * scaleFactor)
+
+        val pos = Vector(tmp.x * scaleFactor, tmp.y * scaleFactor, tmp.z * scaleFactor)
+        val normal = pos.unit
+        val tex = Tex((v1.tex.s + v2.tex.s) / 2, (v1.tex.t + v2.tex.t) / 2)
+        return Vertex(pos.x, pos.y, pos.z, normal, tex)
     }
 
     /**
@@ -440,7 +570,10 @@ class IcoSphere(
         )
 
     companion object {
+        private const val S_STEP = 186 / 2048.0f;     // horizontal texture step
+        private const val T_STEP = 322 / 1024.0f;     // vertical texture step
+
         private const val STRIDE =
-            (POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT) * BYTES_PER_FLOAT
+            (POSITION_COMPONENT_COUNT + NORMAL_COMPONENT_COUNT + TEX_COMPONENT_COUNT) * BYTES_PER_FLOAT
     }
 }

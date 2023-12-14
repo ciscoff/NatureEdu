@@ -15,18 +15,19 @@ struct Material {
 };
 
 uniform vec3 u_LightPos;
-
-uniform vec3 u_Color;
 uniform vec3 u_ViewerPos;
-
-uniform int u_DrawPolygon;
+uniform sampler2D u_TexUnit;
 
 in vec3 v_FragPos;
+in vec2 v_TextPos;
 in vec3 v_Normal;
 out vec4 FragColor;
 
 uniform Light u_Light;
 uniform Material u_Material;
+
+uniform vec3 u_Color;
+uniform int u_DrawPolygon;
 
 /**
   На что обратить внимание:
@@ -41,26 +42,30 @@ uniform Material u_Material;
   только вычислить этот цвет и применить к фрагменту.
  */
 void main() {
-    vec3 color = u_Color;
+    vec4 color = vec4(u_Color, 1.0);
 
     if (u_DrawPolygon == 1) {
+
+        color = texture(u_TexUnit, v_TextPos) * vec4(0.7, 0.7, 0.7, 1.);
+
         // ambient color
         float ambientFactor = 0.8; // темнее/светлее
-        vec3 ambientColor = ambientFactor * u_Light.ambient * u_Material.ambient;
+        vec3 ambientColor = ambientFactor * u_Light.ambient * color.rgb;
 
         // diffuse color
         vec3 lightDir = normalize(u_LightPos - v_FragPos);
         float diffFactor = max(dot(v_Normal, lightDir), 0.0);
-        vec3 diffuseColor = (diffFactor * u_Light.diffuse * u_Material.diffuse);
+        vec3 diffuseColor = (diffFactor * u_Light.diffuse * color.rgb);
 
         // specular color
         vec3 viewDir = normalize(u_ViewerPos - v_FragPos);
         vec3 reflectDir = reflect(-lightDir, v_Normal);
         float specFactor = pow(max(dot(viewDir, reflectDir), 0.0), u_Material.shininess);
-        vec3 specularColor = (specFactor * u_Light.specular * u_Material.specular);
+        vec3 specularColor = (specFactor * u_Light.specular);
 
-        color = ambientColor + diffuseColor + specularColor;
+        color = vec4(ambientColor + diffuseColor + specularColor, 1.0);
     }
 
-    FragColor = vec4(color, 1.0);
+    // NOTE: texture2D is deprecated and changed to 'texture' between glsl 120 and 130
+    FragColor = color;
 }
