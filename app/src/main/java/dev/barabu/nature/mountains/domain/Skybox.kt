@@ -25,7 +25,7 @@ class Skybox : Model {
         vertexArray.bind()
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
-                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Normal -> {
+                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Normal, Attribute.Type.Tex -> {
                     Triple(
                         POSITION_COMPONENT_COUNT,
                         0,

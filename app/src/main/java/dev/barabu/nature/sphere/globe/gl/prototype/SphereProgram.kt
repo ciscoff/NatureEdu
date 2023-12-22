@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.gl.prototype
+package dev.barabu.nature.sphere.globe.gl.prototype
 
 import android.content.Context
 import android.opengl.GLES20.glGetAttribLocation
@@ -15,8 +15,8 @@ import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
-import dev.barabu.nature.sphere.domain.prototype.PolygonSphere
-import dev.barabu.nature.sphere.domain.prototype.StrokeSphere
+import dev.barabu.nature.sphere.globe.domain.prototype.PolygonSphere
+import dev.barabu.nature.sphere.globe.domain.prototype.StrokeSphere
 
 class SphereProgram(
     context: Context,
@@ -101,7 +101,7 @@ class SphereProgram(
 
     companion object {
 
-        private const val TAG = "SphereProgram"
+        private const val TAG = "GlobeProgram"
 
         private const val A_POSITION = "a_Position"
         private const val A_NORMAL = "a_Normal"

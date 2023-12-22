@@ -1,17 +1,15 @@
-package dev.barabu.nature.sphere.domain
+package dev.barabu.nature.sphere.ico.domain
 
 import android.opengl.GLES30
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 
-/**
- * Sphere Vertex Array Object (VAO)
- */
-class SphereVertexArray(
+class IsoSphereVertexArray(
     private val vertexBuffer: VertexBuffer,
     private val polygonElements: ElementBuffer,
-    private val lineElements: ElementBuffer) {
+    private val lineElements: ElementBuffer
+) {
 
     private val arrayId: Int
 
@@ -39,15 +37,15 @@ class SphereVertexArray(
         GLES30.glBindVertexArray(0)
     }
 
+    fun bindAttribute(attrDescriptor: Int, offset: Int, componentCount: Int, stride: Int) {
+        vertexBuffer.bindAttribute(attrDescriptor, offset, componentCount, stride)
+    }
+
     fun bindPolygons() {
         polygonElements.bind()
     }
 
     fun bindLines() {
         lineElements.bind()
-    }
-
-    fun bindAttribute(attrDescriptor: Int, offset: Int, componentCount: Int, stride: Int) {
-        vertexBuffer.bindAttribute(attrDescriptor, offset, componentCount, stride)
     }
 }

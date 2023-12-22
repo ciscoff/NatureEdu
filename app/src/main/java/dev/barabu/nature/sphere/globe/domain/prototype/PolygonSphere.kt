@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.domain.prototype
+package dev.barabu.nature.sphere.globe.domain.prototype
 
 import android.opengl.GLES20.GL_TRIANGLES
 import android.opengl.GLES20.GL_UNSIGNED_INT
@@ -24,7 +24,7 @@ import kotlin.math.sin
  * Sectors - это вертикальные "дольки апельсина"
  *
  * Реализовано два способа представления сферы - сеткой треугольников и сеткой линий.
- * Для каждой реализации создается отдельный интанс Sphere, потому что один VAO не может
+ * Для каждой реализации создается отдельный интанс GlobeSphere, потому что один VAO не может
  * хранить несколько EBO.
  *
  * Как альтернатива - использовать один EBO и хранить в нем оба типа индексов, но не вперемешку,
@@ -73,7 +73,7 @@ class PolygonSphere(
         vertexArray.bind()
         attributes.forEach { attr ->
             val (componentCount, offset, stride) = when (attr.type) {
-                Attribute.Type.Position, Attribute.Type.Color -> {
+                Attribute.Type.Position, Attribute.Type.Color, Attribute.Type.Tex -> {
                     Triple(POSITION_COMPONENT_COUNT, 0, STRIDE)
                 }
 
@@ -190,7 +190,7 @@ class PolygonSphere(
 
     companion object {
 
-        private const val TAG = "Sphere"
+        private const val TAG = "GlobeSphere"
 
         private const val DEFAULT_STACK_COUNT = 18
         private const val DEFAULT_SECTOR_COUNT = 36

@@ -1,4 +1,4 @@
-package dev.barabu.nature.sphere.gl.prototype
+package dev.barabu.nature.sphere.globe.gl.prototype
 
 import android.content.Context
 import android.opengl.GLES20.GL_BLEND

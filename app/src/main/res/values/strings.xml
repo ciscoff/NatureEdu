@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">NatureEdu</string>
+
+    <string name="menu_mountains">Mountains</string>
+    <string name="menu_globe_sphere">Sphere</string>
+    <string name="menu_ico_sphere">IcoSphere</string>
+    <string name="menu_planet_sphere">Earth</string>
 </resources>

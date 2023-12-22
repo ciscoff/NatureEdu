@@ -17,7 +17,6 @@ import android.opengl.GLES20.GL_TEXTURE_MIN_FILTER
 import android.opengl.GLES20.glBindTexture
 import android.opengl.GLES20.glDeleteTextures
 import android.opengl.GLES20.glGenTextures
-import android.opengl.GLES20.glGenerateMipmap
 import android.opengl.GLES20.glTexParameteri
 import android.opengl.GLUtils
 import androidx.annotation.DrawableRes
@@ -81,15 +80,14 @@ object TextureLoader {
      * Создает текстуру (в нативном пространстве) и получает её хендлер. Загружает bitmap из
      * ресурсов и заливает в текстуру. Возвращает дескриптор.
      */
-    fun loadTexture(context: Context, @DrawableRes resourceId: Int): Int {
+    fun loadTexture(
+        context: Context,
+        @DrawableRes resourceId: Int,
+        listener: TexLoadListener? = null
+    ): Int {
         Logging.d("$TAG.loadTexture")
 
         val texDescriptor = IntArray(1)
-        /**
-         * Генерим так называемые texture names количеством 1, которые будут записаны в массив
-         * texDescriptor. Именами текстур являются их дескрипторы в "нативном мире". После того
-         * как мы сгенерим дескриптор/дескрипторы мы должны указать тип текстуры, которую
-         */
         glGenTextures(1, texDescriptor, 0)
 
         if (texDescriptor[0] == ERROR_CODE) return INVALID_DESCRIPTOR
@@ -102,6 +100,7 @@ object TextureLoader {
         }.getOrNull()
 
         if (bitmap == null) {
+            Logging.e("$TAG.loadTexture is failed")
             glDeleteTextures(1, texDescriptor, 0)
             return INVALID_DESCRIPTOR
         }
@@ -109,15 +108,13 @@ object TextureLoader {
         // Привязываем текстуру к таргету GL_TEXTURE_2D.
         glBindTexture(GL_TEXTURE_2D, texDescriptor[0])
 
-        // Применяем фильтры к таргету (то есть к нашей текстуре, потому что она привязана к таргету)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        listener?.onTexPreload(texDescriptor[0])
 
         // Заливаем картинку в текстуру
         GLUtils.texImage2D(GL_TEXTURE_2D, 0, bitmap, 0)
         bitmap.recycle()
 
-        // Генерим Mipmap'ы в нашем таргете (из картинки нашей текстуры)
-        glGenerateMipmap(GL_TEXTURE_2D)
+        listener?.onTexLoaded(texDescriptor[0])
 
         // Освобождаем таргет
         glBindTexture(GL_TEXTURE_2D, 0)
