@@ -65,7 +65,7 @@ mat4 rotationZ(in float angle) {
   только вычислить этот цвет и применить к фрагменту.
  */
 void main() {
-    float lightRotationAngle = mod(u_Time * 0.5, TWO_PI);
+    float lightRotationAngle = mod(u_Time * 0.2, TWO_PI);
     vec3 lightPos = (rotationY(lightRotationAngle) * vec4(u_LightPos, 1.0)).xyz;
 
     vec3 lightDir = normalize(lightPos - v_FragPos);

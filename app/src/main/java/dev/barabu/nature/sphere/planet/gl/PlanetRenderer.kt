@@ -63,10 +63,6 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
             return
         }
 
-        // Model
-        Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.rotateM(modelMatrix, 0, -23.5f, 0f, 0f, 1f)
-
         // View
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 7f, 0f, 0f, 0f, 0f, 1f, 0f)
 
@@ -103,8 +99,13 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
         program.apply {
             val elapsedSecs = (System.currentTimeMillis() - startedTime).toFloat() / 1000
 
-            val planetRotationAngle = ((elapsedSecs/200) % 360)
-            Matrix.rotateM(modelMatrix, 0, planetRotationAngle, 0f, 1.0f, 0.0f)
+            val planetRotationAngle = elapsedSecs % 360
+
+            Matrix.setIdentityM(modelMatrix, 0)
+            // Базовое положение: угол наклона земной оси (делаем поворотом вокруг Z)
+            Matrix.rotateM(modelMatrix, 0, -23.5f, 0f, 0f, 1f)
+            // Анимация
+            Matrix.rotateM(modelMatrix, 0, planetRotationAngle, 0f, 1f, 0f)
 
             useProgram()
             bindModelMatrixUniform(modelMatrix)
@@ -118,7 +119,6 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
             bindNightTexUniform(nightTexDescriptor)
 
             bindTimeUniform(elapsedSecs)
-
 
             bindMaterialUniform(
                 ambient = Vector(0.7f, 0.7f, 0.7f),
