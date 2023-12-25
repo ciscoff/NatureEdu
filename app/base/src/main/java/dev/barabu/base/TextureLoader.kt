@@ -84,13 +84,13 @@ object TextureLoader {
         context: Context,
         @DrawableRes resourceId: Int,
         listener: TexLoadListener? = null
-    ): Int {
+    ): TexInfo {
         Logging.d("$TAG.loadTexture")
 
         val texDescriptor = IntArray(1)
         glGenTextures(1, texDescriptor, 0)
 
-        if (texDescriptor[0] == ERROR_CODE) return INVALID_DESCRIPTOR
+        if (texDescriptor[0] == ERROR_CODE) return TexInfo(INVALID_DESCRIPTOR, 0, 0)
 
         val options = BitmapFactory.Options().apply {
             inScaled = false
@@ -102,8 +102,11 @@ object TextureLoader {
         if (bitmap == null) {
             Logging.e("$TAG.loadTexture is failed")
             glDeleteTextures(1, texDescriptor, 0)
-            return INVALID_DESCRIPTOR
+            return TexInfo(INVALID_DESCRIPTOR, 0, 0)
         }
+
+        val width = bitmap.width
+        val height = bitmap.height
 
         // Привязываем текстуру к таргету GL_TEXTURE_2D.
         glBindTexture(GL_TEXTURE_2D, texDescriptor[0])
@@ -119,7 +122,7 @@ object TextureLoader {
         // Освобождаем таргет
         glBindTexture(GL_TEXTURE_2D, 0)
 
-        return texDescriptor[0]
+        return TexInfo(texDescriptor[0], width, height)
     }
 
     /**

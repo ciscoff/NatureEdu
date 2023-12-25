@@ -1,64 +1,69 @@
-package dev.barabu.nature.sphere.ico.gl
+package dev.barabu.nature.sphere.main.gl
 
 import android.content.Context
-import android.opengl.GLES20
-import android.opengl.GLES20.GL_CLAMP_TO_EDGE
-import android.opengl.GLES20.GL_LINEAR
-import android.opengl.GLES20.GL_NEAREST
-import android.opengl.GLES20.GL_TEXTURE_2D
-import android.opengl.GLES20.GL_TEXTURE_MAG_FILTER
-import android.opengl.GLES20.GL_TEXTURE_MIN_FILTER
-import android.opengl.GLES20.GL_TEXTURE_WRAP_S
-import android.opengl.GLES20.GL_TEXTURE_WRAP_T
-import android.opengl.GLES20.glTexParameteri
-import android.opengl.GLSurfaceView
+import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
+import android.opengl.GLES20.GL_DEPTH_BUFFER_BIT
+import android.opengl.GLES20.GL_DEPTH_TEST
+import android.opengl.GLES20.GL_LEQUAL
+import android.opengl.GLES20.GL_POLYGON_OFFSET_FILL
+import android.opengl.GLES20.glClear
+import android.opengl.GLES20.glClearColor
+import android.opengl.GLES20.glDepthFunc
+import android.opengl.GLES20.glDisable
+import android.opengl.GLES20.glEnable
+import android.opengl.GLES20.glPolygonOffset
+import android.opengl.GLES20.glViewport
+import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
-import dev.barabu.base.INVALID_DESCRIPTOR
-import dev.barabu.base.TexLoadListener
-import dev.barabu.base.TextureLoader
 import dev.barabu.base.geometry.Point
 import dev.barabu.base.geometry.Vector
-import dev.barabu.nature.R
 import dev.barabu.nature.sphere.Mode
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer, TexLoadListener {
+class ColSphereRenderer(private val context: Context) : Renderer {
 
-    private lateinit var programFlat: IcoSphereProgram
-    private lateinit var programSmooth: IcoSphereProgram
+    private lateinit var smoothSphereProgram: ColSphereProgram
+    private lateinit var flatSphereProgram: ColSphereProgram
 
     private val modelMatrix = FloatArray(16)
     private val modelMatrix2 = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
 
+    // NOTE: Именно Point, потому что это координата светильника в пространстве, а не направление
+    //  к нему. У меня была ошибка: использовал Vector, да еще v.unit. Вот чтобы случайно не
+    //  применить unit используем Point, а не Vector.
     private val lightPosition = Point(-2.0f, 2.0f, 1.5f)
     private val viewerPosition = Point(-1.0f, 15.0f, 7.0f)
 
-    // Descriptor нативного буфера с битмапой
-    private var texBuffDescriptor: Int = INVALID_DESCRIPTOR
-
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
-        programFlat = IcoSphereProgram(context, radius = 1.0f, subdivisions = 3, isFlat = true)
-        programSmooth = IcoSphereProgram(context, radius = 1.0f, subdivisions = 3, isFlat = false)
+        glClearColor(0f, 0f, 0f, 1f)
 
-        // Текстура для заливки
-        texBuffDescriptor =
-            TextureLoader.loadTexture(context, R.drawable.ico_sphere_template, this).descriptor
+        smoothSphereProgram = ColSphereProgram(context, radius = 1.0f, isFlat = true)
+        flatSphereProgram = ColSphereProgram(context, radius = 1.0f, isFlat = false)
 
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
-        GLES20.glDepthFunc(GLES20.GL_LEQUAL)
+        glEnable(GL_DEPTH_TEST)
+        glDepthFunc(GL_LEQUAL)
+
+        // Сглаженные линии, но для этого нужна поддержка прозрачности (см. далее)
+//        glEnable(GL_LINE_SMOOTH)
+
+        // Поддержка transparency. В данном случаем для line antialiasing
+//        glEnable(GL_BLEND)
+//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        // NOTE: Вот это дает неожиданный результат. Надо изучить его действие.
+        /*glEnable(GL_CULL_FACE)*/
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
-        GLES20.glViewport(0, 0, width, height)
+        glViewport(0, 0, width, height)
 
         if (width == 0 || height == 0) {
             return
         }
-
         // Model 1
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, 0f, 1.1f, 0f)
@@ -76,69 +81,15 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer, 
 
         // Projection
         Matrix.perspectiveM(projectionMatrix, 0, 45f, width.toFloat() / height.toFloat(), 1f, 10f)
-
     }
 
     override fun onDrawFrame(p0: GL10?) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
         drawSphere()
     }
 
-    override fun onTexPreload(texId: Int) {
-        adjustTex()
-    }
-
-    override fun onTexLoaded(texId: Int) {
-        // todo: nothing
-    }
-
-    private fun adjustTex() {
-        // Wrapping
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-
-        // Filtering
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    }
-
     private fun drawSphere() {
-        programFlat.apply {
-            useProgram()
-            bindModelMatrixUniform(modelMatrix2)
-            bindViewMatrixUniform(viewMatrix)
-            bindProjMatrixUniform(projectionMatrix)
-
-            bindLightPositionUniform(lightPosition)
-            bindViewerPositionUniform(viewerPosition)
-            bindColorUniform(Vector(0f, 0f, 0f))
-
-            bindTexUniform(texBuffDescriptor)
-
-            bindMaterialUniform(
-                ambient = Vector(0.7f, 0.7f, 0.7f),
-                diffuse = Vector(0.7f, 0.7f, 0.7f),
-                specular = Vector(1.0f, 1.0f, 1.0f),
-                shininess = 32f
-            )
-
-            bindLightUniform(
-                ambient = Vector(0.7f, 0.7f, 0.7f),
-                diffuse = Vector(0.7f, 0.7f, 0.7f),
-                specular = Vector(1.0f, 1.0f, 1.0f),
-            )
-
-            bindDrawPolygonUniform(true)
-            GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
-            GLES20.glPolygonOffset(1.0f, 1.0f)
-            draw(Mode.Polygon, false)
-            GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
-
-            bindDrawPolygonUniform(false)
-            draw(Mode.Line, true)
-        }
-
-        programSmooth.apply {
+        smoothSphereProgram.apply {
             useProgram()
             bindModelMatrixUniform(modelMatrix)
             bindViewMatrixUniform(viewMatrix)
@@ -148,7 +99,38 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer, 
             bindViewerPositionUniform(viewerPosition)
             bindColorUniform(Vector(0f, 0f, 0f))
 
-            bindTexUniform(texBuffDescriptor)
+            bindMaterialUniform(
+                ambient = Vector(0.7f, 0.7f, 0.7f),
+                diffuse = Vector(0.7f, 0.7f, 0.7f),
+                specular = Vector(1.0f, 1.0f, 1.0f),
+                shininess = 32f
+            )
+
+            bindLightUniform(
+                ambient = Vector(0.7f, 0.7f, 0.7f),
+                diffuse = Vector(0.7f, 0.7f, 0.7f),
+                specular = Vector(1.0f, 1.0f, 1.0f),
+            )
+
+            bindDrawPolygonUniform(true)
+            glEnable(GL_POLYGON_OFFSET_FILL)
+            glPolygonOffset(1.0f, 1.0f)
+            draw(Mode.Polygon, false)
+            glDisable(GL_POLYGON_OFFSET_FILL)
+
+            bindDrawPolygonUniform(false)
+            draw(Mode.Line, true)
+        }
+
+        flatSphereProgram.apply {
+            useProgram()
+            bindModelMatrixUniform(modelMatrix2)
+            bindViewMatrixUniform(viewMatrix)
+            bindProjMatrixUniform(projectionMatrix)
+
+            bindLightPositionUniform(lightPosition)
+            bindViewerPositionUniform(viewerPosition)
+            bindColorUniform(Vector(0f, 0f, 0f))
 
             bindMaterialUniform(
                 ambient = Vector(0.7f, 0.7f, 0.7f),
@@ -164,10 +146,10 @@ class IcoSphereRenderer(private val context: Context) : GLSurfaceView.Renderer, 
             )
 
             bindDrawPolygonUniform(true)
-            GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
-            GLES20.glPolygonOffset(1.0f, 1.0f)
+            glEnable(GL_POLYGON_OFFSET_FILL)
+            glPolygonOffset(1.0f, 1.0f)
             draw(Mode.Polygon, false)
-            GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
+            glDisable(GL_POLYGON_OFFSET_FILL)
 
             bindDrawPolygonUniform(false)
             draw(Mode.Line, true)

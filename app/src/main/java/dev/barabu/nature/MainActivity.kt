@@ -4,31 +4,33 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import dev.barabu.nature.mountains.MountainsActivity
-import dev.barabu.nature.sphere.globe.GlobeActivity
-import dev.barabu.nature.sphere.ico.IcoActivity
+import dev.barabu.nature.sphere.main.ColSphereActivity
+import dev.barabu.nature.sphere.main.TexSphereActivity
 import dev.barabu.nature.sphere.planet.PlanetActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var scrollView: NestedScrollView
     private lateinit var cardsContainer: LinearLayout
 
     private val stages = mapOf(
         MountainsActivity::class.java to R.string.menu_mountains,
-        GlobeActivity::class.java to R.string.menu_globe_sphere,
-        IcoActivity::class.java to R.string.menu_ico_sphere,
-        PlanetActivity::class.java to R.string.menu_planet_sphere
+        ColSphereActivity::class.java to R.string.menu_globe_sphere,
+        TexSphereActivity::class.java to R.string.menu_main_sphere,
+        PlanetActivity::class.java to R.string.menu_planet_sphere,
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         findView()
         inflateMenu(cardsContainer, stages)
+        hideSystemBars()
     }
 
     private fun findView() {
@@ -52,4 +54,6 @@ class MainActivity : AppCompatActivity() {
             root.addView(cardView)
         }
     }
+
+
 }

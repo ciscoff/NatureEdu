@@ -5,12 +5,13 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.isActualGlEsSupporting
+import dev.barabu.nature.BaseActivity
 import dev.barabu.nature.mountains.gl.MountainsRenderer
 
-class MountainsActivity : AppCompatActivity() {
+class MountainsActivity : BaseActivity() {
 
     private lateinit var glSurfaceView: GLSurfaceView
 
@@ -54,6 +55,7 @@ class MountainsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         renderer = MountainsRenderer(this)
 
@@ -74,5 +76,23 @@ class MountainsActivity : AppCompatActivity() {
         }
 
         setContentView(glSurfaceView)
+        hideSystemBars()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isRendererSet) {
+            glSurfaceView.onResume()
+        }
+    }
+
+    /**
+     * Управляем thread'ом glSurfaceView
+     */
+    override fun onPause() {
+        super.onPause()
+        if (isRendererSet) {
+            glSurfaceView.onPause()
+        }
     }
 }

@@ -19,6 +19,8 @@ class Vector(
 
     val b: Float get() = z
 
+    val a: Float get() = 1f
+
     val unit: Vector
         get() = this / length()
 

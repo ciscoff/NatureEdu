@@ -3,12 +3,12 @@ package dev.barabu.nature.sphere.globe
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.isActualGlEsSupporting
+import dev.barabu.nature.BaseActivity
 import dev.barabu.nature.sphere.globe.gl.GlobeRenderer
 
-class GlobeActivity : AppCompatActivity() {
+class GlobeActivity : BaseActivity() {
 
     private lateinit var glSurfaceView: GLSurfaceView
 
@@ -36,5 +36,22 @@ class GlobeActivity : AppCompatActivity() {
         }
 
         setContentView(glSurfaceView)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isRendererSet) {
+            glSurfaceView.onResume()
+        }
+    }
+
+    /**
+     * Управляем thread'ом glSurfaceView
+     */
+    override fun onPause() {
+        super.onPause()
+        if (isRendererSet) {
+            glSurfaceView.onPause()
+        }
     }
 }
