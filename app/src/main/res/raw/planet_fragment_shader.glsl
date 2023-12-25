@@ -1,6 +1,9 @@
 #version 300 es
 precision mediump float;
 
+#define PI 3.14159265359
+#define TWO_PI 6.28318530718
+
 struct Light {
     vec3 ambient;
     vec3 diffuse;
@@ -16,7 +19,9 @@ struct Material {
 
 uniform vec3 u_LightPos;
 uniform vec3 u_ViewerPos;
-uniform sampler2D u_TexUnit;
+uniform sampler2D u_TexUnitDay;
+uniform sampler2D u_TexUnitNight;
+uniform float u_Time;
 
 in vec3 v_FragPos;
 in vec2 v_TextPos;
@@ -25,6 +30,27 @@ out vec4 FragColor;
 
 uniform Light u_Light;
 uniform Material u_Material;
+
+mat4 rotationX(in float angle) {
+    return mat4(1.0, 0, 0, 0,
+                0, cos(angle), -sin(angle), 0,
+                0, sin(angle), cos(angle), 0,
+                0, 0, 0, 1);
+}
+
+mat4 rotationY(in float angle) {
+    return mat4(cos(angle), 0, sin(angle), 0,
+                0, 1.0, 0, 0,
+                -sin(angle), 0, cos(angle), 0,
+                0, 0, 0, 1);
+}
+
+mat4 rotationZ(in float angle) {
+    return mat4(cos(angle), -sin(angle), 0, 0,
+                sin(angle), cos(angle), 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1);
+}
 
 /**
   На что обратить внимание:
@@ -39,25 +65,25 @@ uniform Material u_Material;
   только вычислить этот цвет и применить к фрагменту.
  */
 void main() {
-    vec4 color = texture(u_TexUnit, v_TextPos);
+    float lightRotationAngle = mod(u_Time * 0.2, TWO_PI);
+    vec3 lightPos = (rotationY(lightRotationAngle) * vec4(u_LightPos, 1.0)).xyz;
+
+    vec3 lightDir = normalize(lightPos - v_FragPos);
+    float diffFactor = dot(v_Normal, lightDir);
+
+    vec4 color = vec4(0.0);
+    if(diffFactor < 0.0) {
+        color = abs(diffFactor) * texture(u_TexUnitNight, v_TextPos);
+    } else {
+        color = diffFactor * texture(u_TexUnitDay, v_TextPos);
+    }
 
     // ambient color
-    float ambientFactor = 0.8; // темнее/светлее
+    float ambientFactor = 0.2; // темнее/светлее
     vec3 ambientColor = ambientFactor * u_Light.ambient * color.rgb;
-
     // diffuse color
-    vec3 lightDir = normalize(u_LightPos - v_FragPos);
-    float diffFactor = max(dot(v_Normal, lightDir), 0.0);
-    vec3 diffuseColor = (diffFactor * u_Light.diffuse * color.rgb);
-
-    // specular color (НЕ ИСПОЛЬЗУЕМ)
-    //    vec3 viewDir = normalize(u_ViewerPos - v_FragPos);
-    //    vec3 reflectDir = reflect(-lightDir, v_Normal);
-    //    float specFactor = pow(max(dot(viewDir, reflectDir), 0.0), u_Material.shininess);
-    //    vec3 specularColor = (specFactor * u_Light.specular * u_Material.specular);
+    vec3 diffuseColor = (u_Light.diffuse * color.rgb);
 
     color = vec4(ambientColor + diffuseColor, 1.0);
-
-    // NOTE: texture2D is deprecated and changed to 'texture' between glsl 120 and 130
     FragColor = color;
 }

@@ -31,20 +31,29 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
     private val viewMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
 
-    private val lightPosition = Point(-2.0f, 2.0f, 1.5f)
-    private val viewerPosition = Point(-1.0f, 15.0f, 7.0f)
+    private val lightPosition = Point(0.0f, 0.2f, -15.0f)
+    private val viewerPosition = Point(0.0f, 0.0f, 5.0f)
 
     // Descriptor нативного буфера с битмапой
-    private var texBuffDescriptor: Int = INVALID_DESCRIPTOR
+    private var dayTexDescriptor: Int = INVALID_DESCRIPTOR
+    private var nightTexDescriptor: Int = INVALID_DESCRIPTOR
+
+    private var startedTime: Long = 0L
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         program = PlanetProgram(context, subdivisions = 3, radius = 1f)
 
         // Текстура для заливки
-        texBuffDescriptor = TextureLoader.loadTexture(context, R.drawable.earth_daymap, this).descriptor
+        dayTexDescriptor =
+            TextureLoader.loadTexture(context, R.drawable.earth_daymap, this).descriptor
+
+        nightTexDescriptor =
+            TextureLoader.loadTexture(context, R.drawable.earth_nightmap, this).descriptor
 
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+
+        startedTime = System.currentTimeMillis()
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -53,11 +62,6 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
         if (width == 0 || height == 0) {
             return
         }
-
-        // Model
-        Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.rotateM(modelMatrix, 0, 45f, 0f, 0f, 1f)
-        Matrix.rotateM(modelMatrix, 0, 45f, 1f, 0f, 0f)
 
         // View
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 7f, 0f, 0f, 0f, 0f, 1f, 0f)
@@ -93,6 +97,16 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
 
     private fun drawPlanet() {
         program.apply {
+            val elapsedSecs = (System.currentTimeMillis() - startedTime).toFloat() / 1000
+
+            val planetRotationAngle = elapsedSecs % 360
+
+            Matrix.setIdentityM(modelMatrix, 0)
+            // Базовое положение: угол наклона земной оси (делаем поворотом вокруг Z)
+            Matrix.rotateM(modelMatrix, 0, -23.5f, 0f, 0f, 1f)
+            // Анимация
+            Matrix.rotateM(modelMatrix, 0, planetRotationAngle, 0f, 1f, 0f)
+
             useProgram()
             bindModelMatrixUniform(modelMatrix)
             bindViewMatrixUniform(viewMatrix)
@@ -101,7 +115,10 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
             bindLightPositionUniform(lightPosition)
             bindViewerPositionUniform(viewerPosition)
 
-            bindTexUniform(texBuffDescriptor)
+            bindDayTexUniform(dayTexDescriptor)
+            bindNightTexUniform(nightTexDescriptor)
+
+            bindTimeUniform(elapsedSecs)
 
             bindMaterialUniform(
                 ambient = Vector(0.7f, 0.7f, 0.7f),
@@ -112,7 +129,7 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
 
             bindLightUniform(
                 ambient = Vector(0.7f, 0.7f, 0.7f),
-                diffuse = Vector(0.7f, 0.7f, 0.7f),
+                diffuse = Vector(1.0f, 1.0f, 1.0f),
                 specular = Vector(1.0f, 1.0f, 1.0f),
             )
 
