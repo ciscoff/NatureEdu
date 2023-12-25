@@ -52,10 +52,6 @@ mat4 rotationZ(in float angle) {
                 0, 0, 0, 1);
 }
 
-float plot(float posX, float pct) {
-    return smoothstep(clamp(pct - 0.05, 0.0, 1.0), clamp(pct + 0.05, 0.0, 1.0), posX);
-}
-
 /**
   На что обратить внимание:
   Fragment shader работает в left handed системе координат (Z направленена от нас) и у каждого
@@ -69,35 +65,25 @@ float plot(float posX, float pct) {
   только вычислить этот цвет и применить к фрагменту.
  */
 void main() {
+    float lightRotationAngle = mod(u_Time * 0.5, TWO_PI);
+    vec3 lightPos = (rotationY(lightRotationAngle) * vec4(u_LightPos, 1.0)).xyz;
 
-    float angle = u_Time * 0.8;
+    vec3 lightDir = normalize(lightPos - v_FragPos);
+    float diffFactor = dot(v_Normal, lightDir);
 
-    // Чётный/Нечётный полный оборот
-    float isOdd = step(1.0, mod(angle / TWO_PI, 2.0));
-    float dayNightRatio = mod(angle, TWO_PI) / TWO_PI;
-
-    float pct = 1.0;
-    if (isOdd < 1.0) {
-        pct = plot(v_TextPos.x, dayNightRatio);
+    vec4 color = vec4(0.0);
+    if(diffFactor < 0.0) {
+        color = abs(diffFactor) * texture(u_TexUnitNight, v_TextPos);
     } else {
-        pct = 1.0 - plot(v_TextPos.x, dayNightRatio);
+        color = diffFactor * texture(u_TexUnitDay, v_TextPos);
     }
-
-    vec4 color = pct * texture(u_TexUnitDay, v_TextPos) + (1.0 - pct) * texture(u_TexUnitNight, v_TextPos);
-
-    vec3 lightPos = (rotationY(angle) * vec4(u_LightPos, 1.0)).xyz;
 
     // ambient color
     float ambientFactor = 0.2; // темнее/светлее
     vec3 ambientColor = ambientFactor * u_Light.ambient * color.rgb;
-
     // diffuse color
-    vec3 lightDir = normalize(lightPos - v_FragPos);
-    float diffFactor = max(dot(v_Normal, lightDir), 0.0);
-    vec3 diffuseColor = (diffFactor * u_Light.diffuse * color.rgb);
+    vec3 diffuseColor = (u_Light.diffuse * color.rgb);
 
     color = vec4(ambientColor + diffuseColor, 1.0);
-
-    // NOTE: texture2D is deprecated and changed to 'texture' between glsl 120 and 130
     FragColor = color;
 }

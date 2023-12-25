@@ -13,7 +13,6 @@ import android.opengl.GLES20.GL_TEXTURE_WRAP_T
 import android.opengl.GLES20.glTexParameteri
 import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
-import android.os.SystemClock
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.base.TexLoadListener
@@ -54,7 +53,7 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
 
-        startedTime = SystemClock.currentThreadTimeMillis()
+        startedTime = System.currentTimeMillis()
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -66,8 +65,7 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
 
         // Model
         Matrix.setIdentityM(modelMatrix, 0)
-//        Matrix.rotateM(modelMatrix, 0, 30f, 0f, 0f, 1f)
-//        Matrix.rotateM(modelMatrix, 0, 30f, 1f, 0f, 0f)
+        Matrix.rotateM(modelMatrix, 0, -23.5f, 0f, 0f, 1f)
 
         // View
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 7f, 0f, 0f, 0f, 0f, 1f, 0f)
@@ -103,14 +101,10 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
 
     private fun drawPlanet() {
         program.apply {
-            val elapsedSecs = (SystemClock.currentThreadTimeMillis() - startedTime).toFloat() / 100
+            val elapsedSecs = (System.currentTimeMillis() - startedTime).toFloat() / 1000
 
-//            val a: Float = elapsedSecs * 0.8f
-//            val dayNightRatio: Float = (a % 6.2831855f)/6.2831855f
-//            Logging.d("$TAG $a ratio $dayNightRatio")
-
-            val angle = (elapsedSecs/100) % 360
-//            Matrix.rotateM(modelMatrix, 0, angle, 0f, 0.8f, 0.1f)
+            val planetRotationAngle = ((elapsedSecs/200) % 360)
+            Matrix.rotateM(modelMatrix, 0, planetRotationAngle, 0f, 1.0f, 0.0f)
 
             useProgram()
             bindModelMatrixUniform(modelMatrix)
@@ -124,6 +118,7 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
             bindNightTexUniform(nightTexDescriptor)
 
             bindTimeUniform(elapsedSecs)
+
 
             bindMaterialUniform(
                 ambient = Vector(0.7f, 0.7f, 0.7f),
