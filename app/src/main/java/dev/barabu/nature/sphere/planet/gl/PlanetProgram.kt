@@ -41,6 +41,9 @@ class PlanetProgram(
     private var uTexUnitDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_TEX_UNIT)
 
+    private var uTimeDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_TIME)
+
     private val aPositionDescriptor: Int =
         GLES20.glGetAttribLocation(programDescriptor, A_POSITION)
 
@@ -130,6 +133,10 @@ class PlanetProgram(
         }
     }
 
+    fun bindTimeUniform(time: Float) {
+        GLES20.glUniform1f(uTimeDescriptor, time)
+    }
+
     fun bindTexUniform(textureId: Int) {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
@@ -146,5 +153,6 @@ class PlanetProgram(
         private const val U_LIGHT_POSITION = "u_LightPos"
         private const val U_VIEWER_POSITION = "u_ViewerPos"
         private const val U_TEX_UNIT = "u_TexUnit"
+        private const val U_TIME = "u_Time"
     }
 }
