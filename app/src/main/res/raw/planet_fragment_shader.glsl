@@ -19,8 +19,10 @@ struct Material {
 
 uniform vec3 u_LightPos;
 uniform vec3 u_ViewerPos;
+uniform vec2 u_Resolution;
 uniform sampler2D u_TexUnitDay;
 uniform sampler2D u_TexUnitNight;
+uniform sampler2D u_TexUnitClouds;
 uniform float u_Time;
 
 in vec3 v_FragPos;
@@ -65,6 +67,8 @@ mat4 rotationZ(in float angle) {
   только вычислить этот цвет и применить к фрагменту.
  */
 void main() {
+    vec2 st = gl_FragCoord.xy / u_Resolution.xy;
+
     float lightRotationAngle = mod(u_Time * 0.2, TWO_PI);
     vec3 lightPos = (rotationY(lightRotationAngle) * vec4(u_LightPos, 1.0)).xyz;
 
@@ -72,10 +76,10 @@ void main() {
     float diffFactor = dot(v_Normal, lightDir);
 
     vec4 color = vec4(0.0);
-    if(diffFactor < 0.0) {
+    if (diffFactor <= 0.0) {
         color = abs(diffFactor) * texture(u_TexUnitNight, v_TextPos);
     } else {
-        color = diffFactor * texture(u_TexUnitDay, v_TextPos);
+        color = diffFactor * mix(texture(u_TexUnitDay, v_TextPos), texture(u_TexUnitClouds, v_TextPos), 0.2);
     }
 
     // ambient color
