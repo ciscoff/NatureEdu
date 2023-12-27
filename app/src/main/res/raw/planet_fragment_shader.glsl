@@ -129,6 +129,16 @@ float cubicBezier(float x, vec2 a, vec2 b) {
     return y;
 }
 
+// https://thebookofshaders.com/edit.php#05/cubicpulse.frag
+float smoothAscent(float c, float w, float x) {
+    float offset = abs(c - x);
+    if (offset > w) {
+        if (x < c) return 0.0;
+        else return 1.0;
+    }
+    return smoothstep(c - w, c + w, x);
+}
+
 /**
   На что обратить внимание:
   Fragment shader работает в left handed системе координат (Z направленена от нас) и у каждого
@@ -142,8 +152,6 @@ float cubicBezier(float x, vec2 a, vec2 b) {
   только вычислить этот цвет и применить к фрагменту.
  */
 void main() {
-    vec2 st = gl_FragCoord.xy / u_Resolution.xy;
-
     vec4 color = vec4(0.0);
     vec4 colorDay = vec4(0.0);
     vec4 colorNight = vec4(0.0);
@@ -167,11 +175,15 @@ void main() {
     // траекторию по горизонтали с помощью Cubic Bezier.
     float normDayNightFactor = (dayNightFactor + 1.0) / 2.0;
 
+    // Способ 1 [Cubic Bezier]
     // Контрольные точки Cubic Bezier.
     // Подобраны чтобы в центре был крутой вертикальный переход от 0.0 к 1.0
-    vec2 cp0 = vec2(0.9, 0.0);
-    vec2 cp1 = vec2(0.1, 1.0);
-    dayNightFactor = cubicBezier(normDayNightFactor, cp0, cp1);
+//    vec2 cp0 = vec2(0.9, 0.0);
+//    vec2 cp1 = vec2(0.1, 1.0);
+//    dayNightFactor = cubicBezier(normDayNightFactor, cp0, cp1);
+
+    // Способ 2 [Продвинутый smoothstep]
+    dayNightFactor = smoothAscent(0.5, 0.1, normDayNightFactor);
 
     color = mix(colorNight, colorDay, dayNightFactor);
 
