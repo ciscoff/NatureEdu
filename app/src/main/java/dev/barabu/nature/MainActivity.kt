@@ -10,6 +10,7 @@ import dev.barabu.nature.mountains.MountainsActivity
 import dev.barabu.nature.sphere.main.ColSphereActivity
 import dev.barabu.nature.sphere.main.TexSphereActivity
 import dev.barabu.nature.sphere.planet.PlanetActivity
+import dev.barabu.nature.video.distortion.VideoDistortionActivity
 
 class MainActivity : BaseActivity() {
 
@@ -21,6 +22,7 @@ class MainActivity : BaseActivity() {
         ColSphereActivity::class.java to R.string.menu_globe_sphere,
         TexSphereActivity::class.java to R.string.menu_main_sphere,
         PlanetActivity::class.java to R.string.menu_planet_sphere,
+        VideoDistortionActivity::class.java to R.string.menu_cat_killer,
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +56,4 @@ class MainActivity : BaseActivity() {
             root.addView(cardView)
         }
     }
-
-
 }
