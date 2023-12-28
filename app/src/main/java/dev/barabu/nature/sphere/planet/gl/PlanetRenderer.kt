@@ -37,6 +37,10 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
     // Descriptor нативного буфера с битмапой
     private var dayTexDescriptor: Int = INVALID_DESCRIPTOR
     private var nightTexDescriptor: Int = INVALID_DESCRIPTOR
+    private var cloudsTexDescriptor: Int = INVALID_DESCRIPTOR
+
+    private var screenWidth: Float = 0f
+    private var screenHeight: Float = 0f
 
     private var startedTime: Long = 0L
 
@@ -50,6 +54,9 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
         nightTexDescriptor =
             TextureLoader.loadTexture(context, R.drawable.earth_nightmap, this).descriptor
 
+        cloudsTexDescriptor =
+            TextureLoader.loadTexture(context, R.drawable.earth_clouds, this).descriptor
+
         // Включаем Z-buffer, чтобы рисовать только те вертексы, которые ближе.
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
 
@@ -62,6 +69,9 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
         if (width == 0 || height == 0) {
             return
         }
+
+        screenWidth = width.toFloat()
+        screenHeight = height.toFloat()
 
         // View
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 7f, 0f, 0f, 0f, 0f, 1f, 0f)
@@ -117,8 +127,11 @@ class PlanetRenderer(private val context: Context) : Renderer, TexLoadListener {
 
             bindDayTexUniform(dayTexDescriptor)
             bindNightTexUniform(nightTexDescriptor)
+            bindCloudsTexUniform(cloudsTexDescriptor)
 
             bindTimeUniform(elapsedSecs)
+
+            bindResolutionUniform(screenWidth, screenHeight)
 
             bindMaterialUniform(
                 ambient = Vector(0.7f, 0.7f, 0.7f),

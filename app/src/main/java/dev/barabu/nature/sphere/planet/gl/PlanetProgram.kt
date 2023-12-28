@@ -44,8 +44,14 @@ class PlanetProgram(
     private var uNightTexUnitDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_TEX_UNIT_NIGHT)
 
+    private var uCloudsTexUnitDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_TEX_UNIT_CLOUDS)
+
     private var uTimeDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_TIME)
+
+    private var uResolutionDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_RESOLUTION)
 
     private val aPositionDescriptor: Int =
         GLES20.glGetAttribLocation(programDescriptor, A_POSITION)
@@ -152,6 +158,16 @@ class PlanetProgram(
         GLES20.glUniform1i(uNightTexUnitDescriptor, 1)
     }
 
+    fun bindCloudsTexUniform(textureId: Int) {
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE2)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
+        GLES20.glUniform1i(uCloudsTexUnitDescriptor, 2)
+    }
+
+    fun bindResolutionUniform(width: Float, height: Float) {
+        GLES20.glUniform2f(uResolutionDescriptor, width, height)
+    }
+
     companion object {
         private const val A_POSITION = "a_Position"
         private const val A_NORMAL = "a_Normal"
@@ -163,6 +179,8 @@ class PlanetProgram(
         private const val U_VIEWER_POSITION = "u_ViewerPos"
         private const val U_TEX_UNIT_DAY = "u_TexUnitDay"
         private const val U_TEX_UNIT_NIGHT = "u_TexUnitNight"
+        private const val U_TEX_UNIT_CLOUDS = "u_TexUnitClouds"
+        private const val U_RESOLUTION = "u_Resolution"
         private const val U_TIME = "u_Time"
     }
 }
