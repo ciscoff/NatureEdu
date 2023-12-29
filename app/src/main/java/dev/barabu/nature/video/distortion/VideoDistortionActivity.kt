@@ -9,6 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
  * ref: https://www.shadertoy.com/view/ldjGzV
  *
  * Алгоритм:
+ * https://android.googlesource.com/platform/cts/+/jb-mr2-release/tests/tests/media/src/android/media/cts/VideoSurfaceView.java
+ * https://github.com/CharonChui/AndroidNote/blob/master/VideoDevelopment/OpenGL/10.GLSurfaceView%2BMediaPlayer%E6%92%AD%E6%94%BE%E8%A7%86%E9%A2%91.md
+ * https://github.com/satish13131/Android_Programs/blob/master/graphics/opengl/video/surfaceview/src/com/example/custom/view/CustomVideoView.java
  * https://stackoverflow.com/a/14999912
  * https://stackoverflow.com/a/48080224
  */
@@ -19,7 +22,7 @@ class VideoDistortionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        glSurfaceView = VideoSurfaceView(this, MediaPlayer(), VIDEO_URI).apply {
+        glSurfaceView = VideoSurfaceView(this, VIDEO_URI).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT

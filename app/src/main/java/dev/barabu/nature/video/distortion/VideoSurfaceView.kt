@@ -2,6 +2,7 @@ package dev.barabu.nature.video.distortion
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.PixelFormat
 import android.media.MediaPlayer
 import android.opengl.GLSurfaceView
 import dev.barabu.base.Logging
@@ -11,7 +12,6 @@ import dev.barabu.nature.video.distortion.gl.VideoRenderer
 @SuppressLint("ViewConstructor")
 class VideoSurfaceView(
     context: Context,
-    player: MediaPlayer,
     videoUri: String,
 ) : GLSurfaceView(context) {
 
@@ -20,10 +20,15 @@ class VideoSurfaceView(
     private var isRendererSet = false
 
     init {
-        videoRenderer = VideoRenderer(context, player, videoUri)
+
+        videoRenderer = VideoRenderer(context, videoUri)
 
         if (context.isActualGlEsSupporting) {
-            setEGLContextClientVersion(2)
+            setEGLContextClientVersion(3)
+
+            holder.setFormat(PixelFormat.TRANSLUCENT)
+            setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+
             setRenderer(videoRenderer)
             isRendererSet = true
         } else {
@@ -47,5 +52,15 @@ class VideoSurfaceView(
             }
         }
         super.onPause()
+    }
+
+    override fun onDetachedFromWindow() {
+        if (isRendererSet) {
+            queueEvent {
+                videoRenderer.release()
+            }
+        }
+        super.onDetachedFromWindow()
+
     }
 }
