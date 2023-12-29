@@ -1,6 +1,8 @@
 package dev.barabu.nature.video.distortion.domain
 
 import android.opengl.GLES20
+import android.opengl.GLES20.GL_TRIANGLES
+import android.opengl.GLES20.GL_TRIANGLE_STRIP
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.TEX_COMPONENT_COUNT
@@ -49,7 +51,10 @@ class Screen : Model {
 
     private fun drawPolygons() {
         vertexArray.bindPolygons()
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, elements.size, GLES20.GL_UNSIGNED_INT, 0)
+        GLES20.glDrawElements(GL_TRIANGLES, elements.size, GLES20.GL_UNSIGNED_INT, 0)
+//        GLES20.glDrawElements(GL_TRIANGLE_STRIP, elements.size, GLES20.GL_UNSIGNED_INT, 0)
+
+//        GLES20.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
     }
 
     companion object {
@@ -63,7 +68,7 @@ class Screen : Model {
 
         private val elements = intArrayOf(
             0, 1, 2,
-            0, 2, 3
+            0, 2, 3,
         )
 
         private const val STRIDE =

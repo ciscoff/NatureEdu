@@ -21,7 +21,7 @@ class VideoSurfaceView(
 
     init {
 
-        videoRenderer = VideoRenderer(context, videoUri)
+        videoRenderer = VideoRenderer(this, context, videoUri)
 
         if (context.isActualGlEsSupporting) {
             setEGLContextClientVersion(3)
@@ -30,6 +30,7 @@ class VideoSurfaceView(
             setEGLConfigChooser(8, 8, 8, 8, 16, 0)
 
             setRenderer(videoRenderer)
+            renderMode = RENDERMODE_WHEN_DIRTY
             isRendererSet = true
         } else {
             Logging.d("This device does not support OpenGL ES 3.0.")

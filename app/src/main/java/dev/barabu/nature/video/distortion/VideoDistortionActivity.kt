@@ -4,6 +4,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import dev.barabu.nature.R
 
 /**
  * ref: https://www.shadertoy.com/view/ldjGzV
@@ -21,8 +22,11 @@ class VideoDistortionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val localVideoUri = "android.resource://${packageName}/${R.raw.cat}"
 
-        glSurfaceView = VideoSurfaceView(this, VIDEO_URI).apply {
+        val uri = VIDEO_URI
+
+        glSurfaceView = VideoSurfaceView(this, uri).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT

@@ -3,19 +3,25 @@ package dev.barabu.nature.video.distortion.gl
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
+import android.net.Uri
 import android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES
 import android.opengl.GLES20
+import android.opengl.GLES20.GL_CLAMP_TO_EDGE
 import android.opengl.GLES20.GL_LINEAR
+import android.opengl.GLES20.GL_MIRRORED_REPEAT
 import android.opengl.GLES20.GL_REPEAT
 import android.opengl.GLES20.GL_TEXTURE_MAG_FILTER
 import android.opengl.GLES20.GL_TEXTURE_MIN_FILTER
 import android.opengl.GLES20.GL_TEXTURE_WRAP_S
 import android.opengl.GLES20.GL_TEXTURE_WRAP_T
 import android.opengl.GLES20.glBindTexture
+import android.opengl.GLES20.glEnable
 import android.opengl.GLES20.glGenTextures
 import android.opengl.GLES20.glTexParameteri
 import android.opengl.GLES20.glViewport
 import android.opengl.GLES32.GL_CLAMP_TO_BORDER
+import android.opengl.GLES32.GL_REPEAT
+import android.opengl.GLSurfaceView
 import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
 import android.view.Surface
@@ -27,14 +33,18 @@ import dev.barabu.nature.video.distortion.VideoSurfaceView
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.round
 
 class VideoRenderer(
+    private val glSurfaceView: GLSurfaceView,
     private val context: Context,
-    private val videoUri: String = "android.resource://${context.packageName}/${R.raw.cat}"
+    private val videoUri: String
 ) : Renderer, SurfaceTexture.OnFrameAvailableListener {
 
     private lateinit var program: VideoProgram
+
+    /** https://source.android.com/docs/core/graphics/arch-st?hl=en */
     private lateinit var surfaceTexture: SurfaceTexture
 
     private var videoTexDescriptor: Int = INVALID_DESCRIPTOR
@@ -52,18 +62,26 @@ class VideoRenderer(
 
     private val onPreparedListenerInternal = MediaPlayer.OnPreparedListener { player ->
         Logging.d("$TAG.OnPreparedListener w/h=${player.videoWidth}/${player.videoHeight}")
-
-        videoWidth = player.videoWidth
-        videoHeight = player.videoHeight
+        synchronized(this) {
+            videoWidth = player.videoWidth
+            videoHeight = player.videoHeight
+        }
         mediaPlayer.start()
     }
+
+    private val onVideoSizeChangeListener =
+        MediaPlayer.OnVideoSizeChangedListener { mp, width, height ->
+            Logging.d("$TAG.OnVideoSizeChangedListener w/h=${width}/${height}")
+
+            synchronized(this) {
+                videoWidth = width
+                videoHeight = height
+            }
+        }
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         Logging.d("$TAG.onSurfaceCreated")
         GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f)
-
-        Matrix.setIdentityM(stMatrix, 0)
-        Matrix.setIdentityM(mvpMatrix, 0)
 
         program = VideoProgram(context)
         setupOffScreenTexture()
@@ -80,8 +98,6 @@ class VideoRenderer(
     override fun onDrawFrame(p0: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        val l : VideoSurfaceView
-
         //  stMatrix (https://stackoverflow.com/a/30635539)
         //  1  0  0  0
         //  0 -1  0  1
@@ -89,14 +105,13 @@ class VideoRenderer(
         //  0  0  0  1
 
         synchronized(this) {
+            Logging.d("$TAG.onDrawFrame")
             if (isSurfaceUpdated) {
                 surfaceTexture.updateTexImage()
                 surfaceTexture.getTransformMatrix(stMatrix)
+                Matrix.rotateM(stMatrix, 0, -90f, 0f, 0f, 1f)
                 isSurfaceUpdated = false
 
-                if (videoWidth != 0 && videoHeight != 0) {
-                    glViewport(0, 0, videoWidth, videoHeight)
-                }
                 // NOTE: Здесь нельзя ставить drawVideo(). Будет моргать.
             }
         }
@@ -104,30 +119,16 @@ class VideoRenderer(
         drawVideo()
     }
 
-    private fun adjustVertices() {
-        val widthRation = surfaceWidth.toFloat() / videoWidth
-        val heightRatio = surfaceHeight.toFloat() / videoHeight
-        val ratio = max(widthRation, heightRatio)
-
-        val targetVideoWidth: Float = round(ratio * videoWidth)
-        val targetVideoHeight: Float = round(ratio * videoHeight)
-
-        val scaleX = targetVideoWidth / surfaceWidth
-        val scaleY = targetVideoHeight / surfaceHeight
-
-        Matrix.setIdentityM(mvpMatrix, 0)
-        Matrix.scaleM(mvpMatrix, 0, scaleX, scaleY, 1f)
-    }
-
     override fun onFrameAvailable(p0: SurfaceTexture?) {
         synchronized(this) {
+            Logging.d("$TAG.onFrameAvailable")
+            glSurfaceView.requestRender()
             isSurfaceUpdated = true
         }
     }
 
     fun play() {
         Logging.d("$TAG.play")
-
         if (!mediaPlayer.isPlaying && videoWidth != 0 && videoHeight != 0) {
             mediaPlayer.start()
         }
@@ -144,19 +145,46 @@ class VideoRenderer(
     }
 
     private fun drawVideo() {
+        Logging.d("$TAG.drawVideo")
+
         Matrix.setIdentityM(mvpMatrix, 0)
         Matrix.setIdentityM(projMatrix, 0)
 
         program.apply {
             useProgram()
-            glViewport(0, 0, videoHeight, videoWidth)
-            /*adjustVertices()*/
+            adjustVideoPort()
             bindVideoTexUniform(videoTexDescriptor)
             bindStMatrixUniform(stMatrix)
             bindProjMatrix(projMatrix)
             bindMvpMatrixUniform(mvpMatrix)
             draw()
         }
+    }
+
+
+    /**
+     * ref: https://ru.stackoverflow.com/a/1191436
+     */
+    private fun adjustVideoPort() {
+        val widthRation = surfaceWidth.toFloat() / videoWidth
+        val heightRatio = surfaceHeight.toFloat() / videoHeight
+        val ratio = min(widthRation, heightRatio)
+
+        val targetVideoWidth = round(ratio * videoWidth).toInt()
+        val targetVideoHeight = round(ratio * videoHeight).toInt()
+
+        glViewport(
+            (surfaceWidth - targetVideoWidth),
+            (surfaceHeight - targetVideoHeight),
+            targetVideoWidth,
+            targetVideoHeight
+        )
+
+//        val scaleX = targetVideoWidth / surfaceWidth
+//        val scaleY = targetVideoHeight / surfaceHeight
+//
+//        Matrix.setIdentityM(mvpMatrix, 0)
+//        Matrix.scaleM(mvpMatrix, 0, scaleX, scaleY, 1f)
     }
 
     /**
@@ -171,8 +199,8 @@ class VideoRenderer(
 
         videoTexDescriptor = descriptor[0]
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, videoTexDescriptor)
-        glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_REPEAT/*GL_CLAMP_TO_EDGE*/)
+        glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_REPEAT/*GL_CLAMP_TO_EDGE*/)
         glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
@@ -188,9 +216,15 @@ class VideoRenderer(
         synchronized(this) { isSurfaceUpdated = false }
         mediaPlayer.apply {
             setOnPreparedListener(onPreparedListenerInternal)
-            setDataSource(videoUri)
+            setOnVideoSizeChangedListener(onVideoSizeChangeListener)
             setSurface(surface)
-            prepareAsync()
+            if (videoUri.startsWith("android")) {
+                setDataSource(context, Uri.parse(videoUri))
+                prepare()
+            } else {
+                setDataSource(videoUri)
+                prepareAsync()
+            }
         }
 
         surface.release()
