@@ -53,7 +53,6 @@ class Screen : Model {
         vertexArray.bindPolygons()
         GLES20.glDrawElements(GL_TRIANGLES, elements.size, GLES20.GL_UNSIGNED_INT, 0)
 //        GLES20.glDrawElements(GL_TRIANGLE_STRIP, elements.size, GLES20.GL_UNSIGNED_INT, 0)
-
 //        GLES20.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
     }
 
@@ -62,13 +61,13 @@ class Screen : Model {
         private val vertices = floatArrayOf(
             -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // (0) Top-left
             -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // (1) Bottom-left
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // (2) Bottom-right
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f  // (3) Top-right
+            1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // (2) Bottom-right
+            1.0f,  1.0f, 0.0f, 1.0f, 1.0f  // (3) Top-right
         )
 
         private val elements = intArrayOf(
             0, 1, 2,
-            0, 2, 3,
+            2, 3, 0
         )
 
         private const val STRIDE =

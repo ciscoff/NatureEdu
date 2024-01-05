@@ -1,6 +1,5 @@
 package dev.barabu.nature.video.distortion
 
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
@@ -24,7 +23,7 @@ class VideoDistortionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val localVideoUri = "android.resource://${packageName}/${R.raw.cat}"
 
-        val uri = VIDEO_URI
+        val uri = localVideoUri
 
         glSurfaceView = VideoSurfaceView(this, uri).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -52,5 +51,8 @@ class VideoDistortionActivity : AppCompatActivity() {
     companion object {
         private const val VIDEO_URI =
             "https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"
+
+        private const val VIDEO_URI_1 =
+            "https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"
     }
 }

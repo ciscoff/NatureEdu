@@ -26,7 +26,7 @@ class VideoSurfaceView(
         if (context.isActualGlEsSupporting) {
             setEGLContextClientVersion(3)
 
-            holder.setFormat(PixelFormat.TRANSLUCENT)
+//            holder.setFormat(PixelFormat.TRANSLUCENT)
             setEGLConfigChooser(8, 8, 8, 8, 16, 0)
 
             setRenderer(videoRenderer)
@@ -62,6 +62,5 @@ class VideoSurfaceView(
             }
         }
         super.onDetachedFromWindow()
-
     }
 }
