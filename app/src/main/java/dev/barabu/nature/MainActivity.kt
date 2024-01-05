@@ -7,9 +7,12 @@ import android.widget.TextView
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
 import dev.barabu.nature.mountains.MountainsActivity
+import dev.barabu.nature.permission.Permission
+import dev.barabu.nature.permission.PermissionManager
 import dev.barabu.nature.sphere.main.ColSphereActivity
 import dev.barabu.nature.sphere.main.TexSphereActivity
 import dev.barabu.nature.sphere.planet.PlanetActivity
+import dev.barabu.nature.video.camera.CameraActivity
 import dev.barabu.nature.video.distortion.VideoDistortionActivity
 
 class MainActivity : BaseActivity() {
@@ -17,22 +20,41 @@ class MainActivity : BaseActivity() {
     private lateinit var scrollView: NestedScrollView
     private lateinit var cardsContainer: LinearLayout
 
+    private lateinit var permissionManager: PermissionManager
+
     private val stages = mapOf(
         MountainsActivity::class.java to R.string.menu_mountains,
         ColSphereActivity::class.java to R.string.menu_globe_sphere,
         TexSphereActivity::class.java to R.string.menu_main_sphere,
         PlanetActivity::class.java to R.string.menu_planet_sphere,
         VideoDistortionActivity::class.java to R.string.menu_cat_killer,
+        CameraActivity::class.java to R.string.menu_camera_preview
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        permissionManager = PermissionManager.from(this)
+
         setContentView(R.layout.activity_main)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         findView()
         inflateMenu(cardsContainer, stages)
         hideSystemBars()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        permissionManager
+            .require(Permission.Camera)
+            .rationale(getString(R.string.dialog_permission_default_message))
+            .checkPermissions { isGranted ->
+                if (isGranted) {
+                    // nothing to do
+                }
+            }
     }
 
     private fun findView() {

@@ -97,7 +97,6 @@ class VideoRenderer(
             if (isSurfaceUpdated) {
                 surfaceTexture.updateTexImage()
                 surfaceTexture.getTransformMatrix(stMatrix)
-                Matrix.rotateM(stMatrix, 0, -90f, 0f, 0f, 1f)
                 isSurfaceUpdated = false
 
                 // NOTE: Здесь нельзя ставить drawVideo(). Будет моргать.
@@ -162,12 +161,6 @@ class VideoRenderer(
             targetVideoWidth,
             targetVideoHeight
         )
-
-//        val scaleX = targetVideoWidth / surfaceWidth
-//        val scaleY = targetVideoHeight / surfaceHeight
-//
-//        Matrix.setIdentityM(mvpMatrix, 0)
-//        Matrix.scaleM(mvpMatrix, 0, scaleX, scaleY, 1f)
     }
 
     /**

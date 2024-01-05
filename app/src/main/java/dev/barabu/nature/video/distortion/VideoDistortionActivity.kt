@@ -23,7 +23,7 @@ class VideoDistortionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val localVideoUri = "android.resource://${packageName}/${R.raw.cat}"
 
-        val uri = localVideoUri
+        val uri = VIDEO_URI
 
         glSurfaceView = VideoSurfaceView(this, uri).apply {
             layoutParams = ViewGroup.LayoutParams(

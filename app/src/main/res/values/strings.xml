@@ -7,4 +7,11 @@
     <string name="menu_planet_sphere">Earth</string>
     <string name="menu_main_sphere">IcoSphere</string>
     <string name="menu_cat_killer">Cat\'s killer</string>
+    <string name="menu_camera_preview">Camera preview</string>
+
+    <!--  Permissions Request Rationale -->
+    <string name="dialog_permission_title">Permission required</string>
+    <string name="dialog_permission_default_message">We need permission to use the camera</string>
+    <string name="dialog_permission_button_positive">OK</string>
+    <string name="dialog_permission_read_contacts">The program requires access to contacts.</string>
 </resources>

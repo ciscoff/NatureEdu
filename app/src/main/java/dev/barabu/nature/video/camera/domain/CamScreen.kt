@@ -1,7 +1,6 @@
-package dev.barabu.nature.video.distortion.domain
+package dev.barabu.nature.video.camera.domain
 
 import android.opengl.GLES20
-import android.opengl.GLES20.GL_TRIANGLES
 import dev.barabu.base.BYTES_PER_FLOAT
 import dev.barabu.base.POSITION_COMPONENT_COUNT
 import dev.barabu.base.TEX_COMPONENT_COUNT
@@ -9,10 +8,11 @@ import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
+import dev.barabu.nature.video.distortion.domain.ScreenVertexArray
 
-class Screen : Model {
+class CamScreen: Model {
 
-    private val vertexArray: ScreenVertexArray = ScreenVertexArray(
+    private val vertexArray: CameraVertexArray = CameraVertexArray(
         VertexBuffer(vertices),
         ElementBuffer(elements)
     )
@@ -44,22 +44,21 @@ class Screen : Model {
 
     override fun draw() {
         vertexArray.bind()
-        GLES20.glDrawElements(GL_TRIANGLES, elements.size, GLES20.GL_UNSIGNED_INT, 0)
+        GLES20.glDrawElements(GLES20.GL_TRIANGLE_STRIP, 4, GLES20.GL_UNSIGNED_INT, 0)
         vertexArray.release()
     }
 
     companion object {
         //      x       y     z     s     t
         private val vertices = floatArrayOf(
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // (0) Top-left
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // (1) Bottom-left
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // (2) Bottom-right
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f  // (3) Top-right
+            -1.0f,  -1.0f,  0.0f,  1f, 0f,
+             1.0f,  -1.0f,  0.0f,  0f, 0f,
+            -1.0f,   1.0f,  0.0f,  1f, 1f,
+             1.0f,   1.0f,  0.0f,  0f, 1f
         )
 
         private val elements = intArrayOf(
-            0, 1, 2,
-            2, 3, 0
+            0, 1, 2, 3
         )
 
         private const val STRIDE =

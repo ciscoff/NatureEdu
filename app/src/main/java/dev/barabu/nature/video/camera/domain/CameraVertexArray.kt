@@ -1,11 +1,11 @@
-package dev.barabu.nature.video.distortion.domain
+package dev.barabu.nature.video.camera.domain
 
 import android.opengl.GLES30
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 
-class ScreenVertexArray(
+class CameraVertexArray(
     private val vertexBuffer: VertexBuffer,
     private val polygonElements: ElementBuffer,
 ) {
@@ -37,5 +37,9 @@ class ScreenVertexArray(
 
     fun bindAttribute(attrDescriptor: Int, offset: Int, componentCount: Int, stride: Int) {
         vertexBuffer.bindAttribute(attrDescriptor, offset, componentCount, stride)
+    }
+
+    fun bindPolygons() {
+        polygonElements.bind()
     }
 }

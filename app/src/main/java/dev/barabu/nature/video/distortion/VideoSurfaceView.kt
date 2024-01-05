@@ -2,8 +2,6 @@ package dev.barabu.nature.video.distortion
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.PixelFormat
-import android.media.MediaPlayer
 import android.opengl.GLSurfaceView
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.isActualGlEsSupporting
@@ -26,7 +24,6 @@ class VideoSurfaceView(
         if (context.isActualGlEsSupporting) {
             setEGLContextClientVersion(3)
 
-//            holder.setFormat(PixelFormat.TRANSLUCENT)
             setEGLConfigChooser(8, 8, 8, 8, 16, 0)
 
             setRenderer(videoRenderer)
