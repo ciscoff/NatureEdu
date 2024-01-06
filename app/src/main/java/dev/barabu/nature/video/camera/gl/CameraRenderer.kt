@@ -2,6 +2,7 @@ package dev.barabu.nature.video.camera.gl
 
 import android.content.Context
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraManager
 import android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES
 import android.opengl.GLES20
 import android.opengl.GLES20.GL_CLAMP_TO_EDGE
@@ -13,15 +14,17 @@ import android.opengl.GLES20.GL_TEXTURE_WRAP_S
 import android.opengl.GLES20.GL_TEXTURE_WRAP_T
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.opengl.Matrix.orthoM
 import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
-import dev.barabu.nature.video.camera.domain.CamInfo
+import dev.barabu.base.Logging
+import dev.barabu.nature.video.camera.domain.CameraWrapper
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class CameraRenderer(
     private val glSurfaceView: GLSurfaceView,
-    private val camInfo: CamInfo,
+    private val cameraWrapper: CameraWrapper,
     private val context: Context,
 ) : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
@@ -29,7 +32,12 @@ class CameraRenderer(
     private var isSurfaceUpdated = false
 
     private val stMatrix = FloatArray(16)
-    private val mvpMatrix = FloatArray(16)
+    private val projMatrix = FloatArray(16)
+
+    /**
+     * Рисовать "голый" кадр с камеры или учесть ориентацию и прочую хуйню
+     */
+    private val isDrawingRawPreview: Boolean = false
 
     /** https://source.android.com/docs/core/graphics/arch-st?hl=en */
     private lateinit var surfaceTexture: SurfaceTexture
@@ -40,17 +48,27 @@ class CameraRenderer(
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
         program = CameraProgram(context)
         setupOffScreenTexture()
-        camInfo.openCamera(surfaceTexture)
+        cameraWrapper.openCamera(
+            context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
+            surfaceTexture
+        )
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+
+        updateOrthographicProjectionMatrix(width.toFloat(), height.toFloat())
+
+        // NOTE: Благодаря этому пропали последние незначительные искажения,
+        //  которые оставались после работы ортогональной проекции.
+        surfaceTexture.setDefaultBufferSize(width, height)
     }
 
     override fun onDrawFrame(p0: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        //  stMatrix (https://stackoverflow.com/a/30635539)
+        //  stMatrix при портретной ориентации девайса
+        //
         //   0  -1  0  1
         //  -1   0  0  1
         //   0   0  1  0
@@ -60,6 +78,11 @@ class CameraRenderer(
                 surfaceTexture.updateTexImage()
                 surfaceTexture.getTransformMatrix(stMatrix)
                 isSurfaceUpdated = false
+
+                // NOTE: SurfaceTexture.getTransformMatrix вернет матрицу, которая позволит
+                //  правильно забирать ST из текстуры GL_TEXTURE_EXTERNAL_OES. Кадр, приходящий
+                //  в текстуру от сенсора камеры, требует дополнительной обработки. И матрица
+                //  избавляет от ручных расчетов, которые есть в https://habr.com/ru/articles/480878
 
                 // NOTE: Здесь нельзя ставить drawVideo(). Будет моргать.
             }
@@ -76,13 +99,18 @@ class CameraRenderer(
     }
 
     private fun drawPreview() {
-        Matrix.setIdentityM(mvpMatrix, 0)
 
         program.apply {
             useProgram()
             bindVideoTexUniform(previewTexDescriptor)
+
+            if (isDrawingRawPreview) {
+                Matrix.setIdentityM(stMatrix, 0)
+                Matrix.setIdentityM(projMatrix, 0)
+            }
+
             bindStMatrixUniform(stMatrix)
-            bindMvpMatrixUniform(mvpMatrix)
+            bindMvpMatrixUniform(projMatrix)
             draw()
         }
     }
@@ -102,5 +130,25 @@ class CameraRenderer(
 
         surfaceTexture = SurfaceTexture(previewTexDescriptor)
         surfaceTexture.setOnFrameAvailableListener(this)
+    }
+
+    /**
+     * Алгоритм такой:
+     * - Имеем ориентацию Portrait на экране W/H 720/1280
+     * - Оставляем X-координаты вертексов равными -1 и 1
+     * - Скалируем Y-координаты вертексов на величину H/W (1280/720=1.78)
+     * То есть захватываем из мира прямоугольник [-1.0, -1.78] - [1.0, 1,78]. Ортогональная
+     * проекция упакует прямоугольник в стандартный квадрат [-1, -1] - [1, 1], то сплющит
+     * картинку по вертикали.
+     */
+    private fun updateOrthographicProjectionMatrix(width: Float, height: Float) {
+        val ratio = if (width > height) width / height else height / width
+        Logging.d("WOWOW width=$width, height=$height, ratio=$ratio")
+
+        if (width > height) {
+            orthoM(projMatrix, 0, -ratio, ratio, -1f, 1f, -1f, 1f)
+        } else {
+            orthoM(projMatrix, 0, -1f, 1f, -ratio, ratio, -1f, 1f)
+        }
     }
 }

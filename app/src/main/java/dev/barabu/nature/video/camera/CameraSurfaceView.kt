@@ -5,17 +5,17 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.isActualGlEsSupporting
-import dev.barabu.nature.video.camera.domain.CamInfo
+import dev.barabu.nature.video.camera.domain.CameraWrapper
 import dev.barabu.nature.video.camera.gl.CameraRenderer
 
 @SuppressLint("ViewConstructor")
-class CameraSurfaceView(context: Context, camInfo: CamInfo) : GLSurfaceView(context) {
+class CameraSurfaceView(context: Context, cameraWrapper: CameraWrapper) : GLSurfaceView(context) {
 
     private var cameraRenderer: CameraRenderer
     private var isRendererSet = false
 
     init {
-        cameraRenderer = CameraRenderer(this, camInfo, context)
+        cameraRenderer = CameraRenderer(this, cameraWrapper, context)
 
         if (context.isActualGlEsSupporting) {
             setEGLContextClientVersion(3)
