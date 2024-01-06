@@ -38,8 +38,4 @@ class CameraVertexArray(
     fun bindAttribute(attrDescriptor: Int, offset: Int, componentCount: Int, stride: Int) {
         vertexBuffer.bindAttribute(attrDescriptor, offset, componentCount, stride)
     }
-
-    fun bindPolygons() {
-        polygonElements.bind()
-    }
 }
