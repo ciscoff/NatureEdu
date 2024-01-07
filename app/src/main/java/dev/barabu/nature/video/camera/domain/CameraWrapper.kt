@@ -63,7 +63,7 @@ class CameraWrapper(
     fun openCamera(manager: CameraManager, surfaceTexture: SurfaceTexture) {
         this.surfaceTexture = surfaceTexture
 
-        printAvailableFrameSizes(characteristics)
+        /*printAvailableFrameSizes(characteristics)*/
 
         manager.openCamera(
             cameraId,

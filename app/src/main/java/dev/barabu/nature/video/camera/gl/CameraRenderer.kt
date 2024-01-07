@@ -1,8 +1,10 @@
 package dev.barabu.nature.video.camera.gl
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraManager
+import android.opengl.EGL14
 import android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES
 import android.opengl.GLES20
 import android.opengl.GLES20.GL_CLAMP_TO_EDGE
@@ -15,6 +17,7 @@ import android.opengl.GLES20.GL_TEXTURE_WRAP_T
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.opengl.Matrix.orthoM
+import android.view.Surface
 import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
@@ -32,7 +35,15 @@ class CameraRenderer(
     private var isSurfaceUpdated = false
 
     private val stMatrix = FloatArray(16)
+    private val mvpMatrix = FloatArray(16)
     private val projMatrix = FloatArray(16)
+    private val modelMatrix = FloatArray(16)
+
+    /**
+     * Counter-clockwise угол поворота девайса от своего натурального положения.
+     */
+    private val displayRotation: Int
+        get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
 
     /**
      * Рисовать "голый" кадр с камеры или учесть ориентацию и прочую хуйню
@@ -45,6 +56,7 @@ class CameraRenderer(
     private lateinit var program: CameraProgram
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
+        Logging.d("$TAG.onSurfaceCreated")
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
         program = CameraProgram(context)
         setupOffScreenTexture()
@@ -54,10 +66,15 @@ class CameraRenderer(
         )
     }
 
+    /**
+     * Метод вызывается при повороте экрана.
+     */
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
+        Logging.d("$TAG.onSurfaceChanged")
         GLES20.glViewport(0, 0, width, height)
 
         updateOrthographicProjectionMatrix(width.toFloat(), height.toFloat())
+        updateModelMatrix()
 
         // NOTE: Благодаря этому пропали последние незначительные искажения,
         //  которые оставались после работы ортогональной проекции.
@@ -67,12 +84,15 @@ class CameraRenderer(
     override fun onDrawFrame(p0: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        //  stMatrix при портретной ориентации девайса
+        EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
+
+        //  stMatrix в Portrait и Landscape ориентации девайса одинаковы.
+        //  То есть матрица учитывает только ориентацию сенсора, но НЕ учитывает поворот девайса.
         //
-        //   0  -1  0  1
-        //  -1   0  0  1
-        //   0   0  1  0
-        //   0   0  0  1
+        //   0  -1   0   1
+        //  -1   0   0   1
+        //   0   0   1   0
+        //   0   0   0   1
         synchronized(this) {
             if (isSurfaceUpdated) {
                 surfaceTexture.updateTexImage()
@@ -100,6 +120,8 @@ class CameraRenderer(
 
     private fun drawPreview() {
 
+        Matrix.multiplyMM(mvpMatrix, 0, projMatrix, 0, modelMatrix, 0)
+
         program.apply {
             useProgram()
             bindVideoTexUniform(previewTexDescriptor)
@@ -110,7 +132,7 @@ class CameraRenderer(
             }
 
             bindStMatrixUniform(stMatrix)
-            bindMvpMatrixUniform(projMatrix)
+            bindMvpMatrixUniform(mvpMatrix)
             draw()
         }
     }
@@ -150,5 +172,21 @@ class CameraRenderer(
         } else {
             orthoM(projMatrix, 0, -1f, 1f, -ratio, ratio, -1f, 1f)
         }
+    }
+
+    private fun updateModelMatrix() {
+        Matrix.setIdentityM(modelMatrix, 0)
+        Matrix.rotateM(modelMatrix, 0, displayRotation.toFloat(), 0f, 0f, 1f)
+    }
+
+    companion object {
+        private const val TAG = "CameraRenderer"
+
+        private val DISPLAY_ROTATIONS = mapOf(
+            Surface.ROTATION_0 to 0,
+            Surface.ROTATION_90 to 90,
+            Surface.ROTATION_180 to 180,
+            Surface.ROTATION_270 to 270
+        )
     }
 }
