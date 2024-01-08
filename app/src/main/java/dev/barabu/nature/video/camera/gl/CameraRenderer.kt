@@ -34,7 +34,6 @@ class CameraRenderer(
     private var isSurfaceUpdated = false
 
     private val stMatrix = FloatArray(16)
-    private val mvpMatrix = FloatArray(16)
     private val projMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
 
@@ -72,8 +71,7 @@ class CameraRenderer(
         Logging.d("$TAG.onSurfaceChanged")
         GLES20.glViewport(0, 0, width, height)
 
-        updateOrthographicProjectionMatrix(width.toFloat(), height.toFloat())
-        updateModelMatrix()
+        updateModelMatrix(width.toFloat(), height.toFloat())
 
         // NOTE: Благодаря этому пропали последние незначительные искажения,
         //  которые оставались после работы ортогональной проекции.
@@ -116,9 +114,6 @@ class CameraRenderer(
     }
 
     private fun drawPreview() {
-
-        Matrix.multiplyMM(mvpMatrix, 0, projMatrix, 0, modelMatrix, 0)
-
         program.apply {
             useProgram()
             bindVideoTexUniform(previewTexDescriptor)
@@ -129,7 +124,7 @@ class CameraRenderer(
             }
 
             bindStMatrixUniform(stMatrix)
-            bindMvpMatrixUniform(mvpMatrix)
+            bindMvpMatrixUniform(modelMatrix)
             draw()
         }
     }
@@ -151,6 +146,43 @@ class CameraRenderer(
         surfaceTexture.setOnFrameAvailableListener(this)
     }
 
+    private fun updateModelMatrix(width: Float, height: Float) {
+        Matrix.setIdentityM(modelMatrix, 0)
+        rotateModel()
+        scaleModel(width, height)
+    }
+
+    private fun rotateModel() {
+        Matrix.rotateM(modelMatrix, 0, displayRotation.toFloat(), 0f, 0f, 1f)
+    }
+
+    /**
+     * В Landscape за базу берем высоту SurfaceTexture и скалируем вертексы по горизонтали.
+     * В Portrait за базу берем ширину SurfaceTexture и скалируем вертексы по вертикали.
+     * Осталось только выяснить размер кадра с камеры, чтобы рассчитать scaleFactor.
+     *
+     * Размер кадра нам не нужен. Будем настраивать трансформацию аналогично TextureView.
+     * https://developer.android.com/reference/android/view/TextureView#setTransform(android.graphics.Matrix)
+     */
+    private fun scaleModel(width: Float, height: Float) {
+        if (height > width) {
+            // В вертикальном положении за 1 берем высоту (Y) и скалируем вертексы по ширине (X)
+            val ratio = height / width
+            Matrix.scaleM(modelMatrix, 0, ratio, 1f, 1f)
+            Logging.d("$TAG.updateScaleMatrix Portrait ratio=$ratio")
+        } else {
+            // В горизонтальном положении за 1 берем ширину (X) и скалируем вертексы по высоте (Y)
+//            val ratio = width / height
+//            Matrix.scaleM(modelMatrix, 0, 1f, ratio, 1f)
+//            Logging.d("$TAG.updateScaleMatrix Landscape ratio=$ratio")
+            /**
+             * INFO: ПИЛЯТЬ ! В горизонтальном положении ВООБЩЕ НЕ НАДО скалировать. Камера
+             *  отдает кадр в своей натуральной ориентации и в размере Surface, который
+             *  равен размеру экрана (у нас полноэкранное окно)
+             */
+        }
+    }
+
     /**
      * Алгоритм такой:
      * - Имеем ориентацию Portrait на экране W/H 720/1280
@@ -159,36 +191,17 @@ class CameraRenderer(
      * То есть захватываем из мира прямоугольник [-1.0, -1.78] - [1.0, 1,78]. Ортогональная
      * проекция упакует прямоугольник в стандартный квадрат [-1, -1] - [1, 1], то сплющит
      * картинку по вертикали.
+     *
+     * INFO: Вариант с ортогональной проекцией не прокатил. Нужно явно скалировать вертексы.
      */
     private fun updateOrthographicProjectionMatrix(width: Float, height: Float) {
         val ratio = if (width > height) width / height else height / width
-        Logging.d("WOWOW width=$width, height=$height, ratio=$ratio")
 
         if (width > height) {
             orthoM(projMatrix, 0, -ratio, ratio, -1f, 1f, -1f, 1f)
         } else {
             orthoM(projMatrix, 0, -1f, 1f, -ratio, ratio, -1f, 1f)
         }
-    }
-
-    /**
-     * В Landscape за базу берем высоту SurfaceTexture и скалируем вертексы по горизонтали
-     * В Portrait за базу берем ширину SurfaceTexture и скалируем вертексы по вертикали
-     * Осталось только выяснить размер кадра с камеры, чтобы рассчитать scaleFactor
-     */
-    private fun updateScaleMatrix(width: Float, height: Float) {
-
-        if (width > height) {
-
-        } else {
-
-        }
-
-    }
-
-    private fun updateModelMatrix() {
-        Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.rotateM(modelMatrix, 0, displayRotation.toFloat(), 0f, 0f, 1f)
     }
 
     companion object {

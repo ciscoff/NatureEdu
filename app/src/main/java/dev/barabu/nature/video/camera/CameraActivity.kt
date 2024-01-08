@@ -6,7 +6,6 @@ import android.hardware.camera2.CameraMetadata.LENS_FACING_BACK
 import android.os.Bundle
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import dev.barabu.base.Logging
 import dev.barabu.nature.video.camera.domain.CameraWrapper
 import dev.barabu.nature.video.camera.domain.CameraWrapper.Companion.getCameraId
 
@@ -48,15 +47,5 @@ class CameraActivity : AppCompatActivity() {
         val manager = getSystemService(CAMERA_SERVICE) as CameraManager
         val cameraId = getCameraId(manager, lens)
         return CameraWrapper(cameraId, manager.getCameraCharacteristics(cameraId))
-    }
-
-    companion object {
-        private const val TAG = "CameraActivity"
-
-        const val SENSOR_ORIENTATION_0 = 0
-        const val SENSOR_ORIENTATION_90 = 90
-        const val SENSOR_ORIENTATION_180 = 180
-        const val SENSOR_ORIENTATION_270 = 270
-        const val SENSOR_ORIENTATION_UNKNOWN = Int.MAX_VALUE
     }
 }
