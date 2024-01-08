@@ -8,17 +8,20 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES
 import android.hardware.camera2.CameraCharacteristics.CONTROL_AWB_AVAILABLE_MODES
 import android.hardware.camera2.CameraCharacteristics.LENS_FACING
-import android.hardware.camera2.CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE
 import android.hardware.camera2.CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP
-import android.hardware.camera2.CameraCharacteristics.SENSOR_ORIENTATION
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.params.StreamConfigurationMap
 import android.os.Looper
 import android.view.Surface
 import dev.barabu.base.Logging
-import dev.barabu.nature.video.camera.CameraActivity
+import dev.barabu.base.extentions.camera2.isAutoExposureSupported
+import dev.barabu.base.extentions.camera2.isAutoWhiteBalanceSupported
+import dev.barabu.base.extentions.camera2.isContinuousAutoFocusSupported
+import dev.barabu.base.extentions.camera2.minFocusDist
+import dev.barabu.base.extentions.camera2.sensorOrientation
 
 /**
  * Сенсор камеры выравнивается по текущему положению "длинной" части экрана. Если текущая
@@ -32,18 +35,6 @@ class CameraWrapper(
     private lateinit var surfaceTexture: SurfaceTexture
 
     private var cameraDevice: CameraDevice? = null
-
-    private val physicalCameraIds: List<String>
-        get() = characteristics.physicalCameraIds.toList()
-
-    val sensorOrientation: Int
-        get() = characteristics.get(SENSOR_ORIENTATION) ?: CameraActivity.SENSOR_ORIENTATION_UNKNOWN
-
-    val isFront: Boolean
-        get() = characteristics.get(LENS_FACING) == CameraMetadata.LENS_FACING_FRONT
-
-    private val minFocusDist: Float
-        get() = characteristics.get(LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: 0f
 
     private val cameraStateCallback = object : CameraDevice.StateCallback() {
 
@@ -63,8 +54,6 @@ class CameraWrapper(
     fun openCamera(manager: CameraManager, surfaceTexture: SurfaceTexture) {
         this.surfaceTexture = surfaceTexture
 
-        /*printAvailableFrameSizes(characteristics)*/
-
         manager.openCamera(
             cameraId,
             cameraStateCallback,
@@ -78,6 +67,7 @@ class CameraWrapper(
     ) {
         val surface = Surface(surfaceTexture)
         val builder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+
         builder.addTarget(surface)
 
         val sessionStateCallback = object : CameraCaptureSession.StateCallback() {
@@ -99,16 +89,21 @@ class CameraWrapper(
     }
 
     /**
-     * Настроить builder использовать auto-focus, auto-exposure и auto-white-balance
+     * ref: https://github.com/googlearchive/android-Camera2Raw
+     * file: Camera2RawFragment.java
+     *
+     * Через builder включить auto-focus, auto-exposure и auto-white-balance
      */
     private fun setup3AControls(builder: CaptureRequest.Builder) {
+        // Enable auto-magical 3A run by camera device
         builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
 
-        if (minFocusDist > 0f) {
+        // Если minFocusDist равно 0, то у камеры фокус фиксирован и не меняется
+        val hasAutoFocus = characteristics.minFocusDist() > 0f
+
+        if (hasAutoFocus) {
             // If there is a "continuous picture" mode available, use it, otherwise default to AUTO.
-            if (characteristics.get(CONTROL_AF_AVAILABLE_MODES)
-                    ?.contains(CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE) == true
-            ) {
+            if (characteristics.isContinuousAutoFocusSupported()) {
                 builder.set(
                     CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
@@ -116,23 +111,26 @@ class CameraWrapper(
             } else {
                 builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO)
             }
+        }
 
-            if (characteristics.get(CONTROL_AWB_AVAILABLE_MODES)
-                    ?.contains(CaptureRequest.CONTROL_AWB_MODE_AUTO) == true
-            ) {
-                builder.set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
-            }
+        // If there is an auto-magical flash control mode available, use it, otherwise default to
+        // the "on" mode, which is guaranteed to always be available.
+        if (characteristics.isAutoExposureSupported(CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)) {
+            builder.set(
+                CaptureRequest.CONTROL_AE_MODE,
+                CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH
+            )
+        } else {
+            builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+        }
+
+        // If there is a "continuous picture" mode available, use it, otherwise default to AUTO.
+        if (characteristics.isAutoWhiteBalanceSupported()) {
+            builder.set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
         }
     }
 
     companion object {
-
-        private fun printAvailableFrameSizes(characteristics: CameraCharacteristics) {
-            val map = characteristics.get(SCALER_STREAM_CONFIGURATION_MAP)
-            for (size in map!!.getOutputSizes(SurfaceTexture::class.java)) {
-                Logging.d("imageDimension ${size.width}/${size.height}")
-            }
-        }
 
         /**
          * ref: https://www.youtube.com/watch?v=IPJIjlxRrLI

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraManager
-import android.opengl.EGL14
 import android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES
 import android.opengl.GLES20
 import android.opengl.GLES20.GL_CLAMP_TO_EDGE
@@ -83,8 +82,6 @@ class CameraRenderer(
 
     override fun onDrawFrame(p0: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-
-        EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
 
         //  stMatrix в Portrait и Landscape ориентации девайса одинаковы.
         //  То есть матрица учитывает только ориентацию сенсора, но НЕ учитывает поворот девайса.
@@ -172,6 +169,21 @@ class CameraRenderer(
         } else {
             orthoM(projMatrix, 0, -1f, 1f, -ratio, ratio, -1f, 1f)
         }
+    }
+
+    /**
+     * В Landscape за базу берем высоту SurfaceTexture и скалируем вертексы по горизонтали
+     * В Portrait за базу берем ширину SurfaceTexture и скалируем вертексы по вертикали
+     * Осталось только выяснить размер кадра с камеры, чтобы рассчитать scaleFactor
+     */
+    private fun updateScaleMatrix(width: Float, height: Float) {
+
+        if (width > height) {
+
+        } else {
+
+        }
+
     }
 
     private fun updateModelMatrix() {
