@@ -27,11 +27,11 @@ import javax.microedition.khronos.opengles.GL10
 class CameraRenderer(
     private val glSurfaceView: GLSurfaceView,
     private val cameraWrapper: CameraWrapper,
-    private val context: Context,
 ) : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
     private var previewTexDescriptor: Int = INVALID_DESCRIPTOR
     private var isSurfaceUpdated = false
+    private val context = glSurfaceView.context
 
     private val stMatrix = FloatArray(16)
     private val projMatrix = FloatArray(16)
@@ -146,10 +146,27 @@ class CameraRenderer(
         surfaceTexture.setOnFrameAvailableListener(this)
     }
 
+    /**
+     * Будем настраивать трансформацию аналогично TextureView.
+     * https://developer.android.com/reference/android/view/TextureView#setTransform(android.graphics.Matrix)
+     *
+     * INFO: Важен порядок операций:
+     *  - Сначала scale
+     *  - Потом rotate
+     *
+     * Сначала позиционируем вертекс с учетом положения дисплея (поворот), а потом скалируем:
+     *
+     *   |scaleM| * |rotateM| * |vertex|
+     *
+     * Если сделать наоборот, то скалированный вертекс улетит не туда после поворота и
+     * поплывёт логика в методе [scaleModel]
+     *
+     * INFO: По поводу порядка применения матриц см [dev.barabu.base.matrix.TransformationsOrder]
+     */
     private fun updateModelMatrix(width: Float, height: Float) {
         Matrix.setIdentityM(modelMatrix, 0)
-        rotateModel()
         scaleModel(width, height)
+        rotateModel()
     }
 
     private fun rotateModel() {
@@ -157,29 +174,27 @@ class CameraRenderer(
     }
 
     /**
-     * В Landscape за базу берем высоту SurfaceTexture и скалируем вертексы по горизонтали.
-     * В Portrait за базу берем ширину SurfaceTexture и скалируем вертексы по вертикали.
-     * Осталось только выяснить размер кадра с камеры, чтобы рассчитать scaleFactor.
-     *
-     * Размер кадра нам не нужен. Будем настраивать трансформацию аналогично TextureView.
-     * https://developer.android.com/reference/android/view/TextureView#setTransform(android.graphics.Matrix)
+     * INFO: 1
+     *  ПИЛЯТЬ ! В горизонтальном положении ВООБЩЕ НЕ НАДО скалировать. Камера
+     *  отдает кадр в своей натуральной ориентации и в размере Surface, который
+     *  равен размеру экрана (у нас полноэкранное окно)
+     * INFO: 2
+     *  Предыдущее info справедливо, если в настройках девайса разрешен автоповорот,
+     *  и активити пересоздается при смене ориентации. То есть получаем новую Surface
+     *  и в горизонтальной ориентации ничего делать не надо, потому что кадр из камеры
+     *  полностью готов к показу на весь экран.
+     * INFO: 3
+     *  Смотри комменты к методу [updateModelMatrix]
      */
     private fun scaleModel(width: Float, height: Float) {
         if (height > width) {
             // В вертикальном положении за 1 берем высоту (Y) и скалируем вертексы по ширине (X)
             val ratio = height / width
             Matrix.scaleM(modelMatrix, 0, ratio, 1f, 1f)
-            Logging.d("$TAG.updateScaleMatrix Portrait ratio=$ratio")
         } else {
             // В горизонтальном положении за 1 берем ширину (X) и скалируем вертексы по высоте (Y)
-//            val ratio = width / height
-//            Matrix.scaleM(modelMatrix, 0, 1f, ratio, 1f)
-//            Logging.d("$TAG.updateScaleMatrix Landscape ratio=$ratio")
-            /**
-             * INFO: ПИЛЯТЬ ! В горизонтальном положении ВООБЩЕ НЕ НАДО скалировать. Камера
-             *  отдает кадр в своей натуральной ориентации и в размере Surface, который
-             *  равен размеру экрана (у нас полноэкранное окно)
-             */
+            val ratio = width / height
+            Matrix.scaleM(modelMatrix, 0, 1f, ratio, 1f)
         }
     }
 

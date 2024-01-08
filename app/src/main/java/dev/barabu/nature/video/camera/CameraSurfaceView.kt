@@ -15,7 +15,7 @@ class CameraSurfaceView(context: Context, cameraWrapper: CameraWrapper) : GLSurf
     private var isRendererSet = false
 
     init {
-        cameraRenderer = CameraRenderer(this, cameraWrapper, context)
+        cameraRenderer = CameraRenderer(this, cameraWrapper)
 
         if (context.isActualGlEsSupporting) {
             setEGLContextClientVersion(3)

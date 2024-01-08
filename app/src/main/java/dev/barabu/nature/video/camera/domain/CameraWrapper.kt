@@ -10,7 +10,7 @@ import android.hardware.camera2.CameraCharacteristics.SCALER_STREAM_CONFIGURATIO
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
-import android.os.Looper
+import android.os.Handler
 import android.view.Surface
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.camera2.isAutoExposureSupported
@@ -25,23 +25,30 @@ import dev.barabu.base.extentions.camera2.minFocusDist
 class CameraWrapper(
     private val cameraId: String,
     private val characteristics: CameraCharacteristics,
+    private val cameraHandler: Handler
 ) {
 
     private lateinit var surfaceTexture: SurfaceTexture
 
     private var cameraDevice: CameraDevice? = null
 
+    /**
+     * Текущие состояния нашей камеры (CameraDevice)
+     */
     private val cameraStateCallback = object : CameraDevice.StateCallback() {
 
-        override fun onOpened(cd: CameraDevice) {
-            cameraDevice = cd
-            createCameraPreviewSession(cd, surfaceTexture)
+        override fun onOpened(p0: CameraDevice) {
+            cameraDevice = p0
+            createCameraCaptureSession(p0, surfaceTexture)
         }
 
         override fun onDisconnected(p0: CameraDevice) {
+            cameraDevice = p0
+            release()
         }
 
         override fun onError(p0: CameraDevice, p1: Int) {
+            cameraDevice = p0
         }
     }
 
@@ -52,35 +59,42 @@ class CameraWrapper(
         manager.openCamera(
             cameraId,
             cameraStateCallback,
-            android.os.Handler(Looper.getMainLooper())
+            cameraHandler
         )
     }
 
-    private fun createCameraPreviewSession(
+    fun release() = kotlin.runCatching {
+        cameraDevice?.close()
+    }
+
+    /**
+     * Подключаемся к камере (session) и через sessionStateCallback получаем состояния подключения.
+     * Когда сессия установлена, то делает запрос на capture
+     */
+    private fun createCameraCaptureSession(
         camera: CameraDevice,
         surfaceTexture: SurfaceTexture
     ) {
         val surface = Surface(surfaceTexture)
-        val builder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
 
-        builder.addTarget(surface)
-
+        /**
+         * Текущие состояния нашей сессии (CameraCaptureSession)
+         */
         val sessionStateCallback = object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
+                val builder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                builder.addTarget(surface)
                 setup3AControls(builder)
-                session.setRepeatingRequest(builder.build(), null, null)
+                session.setRepeatingRequest(builder.build(), null, cameraHandler)
+                surface.release()
             }
 
             override fun onConfigureFailed(p0: CameraCaptureSession) {
-                TODO("Not yet implemented")
+                Logging.e("CameraCaptureSession not configured")
             }
         }
 
-        camera.createCaptureSession(
-            listOf(surface), sessionStateCallback,
-            android.os.Handler(Looper.getMainLooper())
-        )
-        surface.release()
+        camera.createCaptureSession(listOf(surface), sessionStateCallback, cameraHandler)
     }
 
     /**

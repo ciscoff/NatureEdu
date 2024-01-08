@@ -48,13 +48,9 @@ class MainActivity : BaseActivity() {
         super.onResume()
 
         permissionManager
-            .require(Permission.Camera)
+            .require(Permission.Camera, Permission.RecordAudio)
             .rationale(getString(R.string.dialog_permission_default_message))
-            .checkPermissions { isGranted ->
-                if (isGranted) {
-                    // nothing to do
-                }
-            }
+            .checkPermissions { isGranted -> }
     }
 
     private fun findView() {

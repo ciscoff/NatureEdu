@@ -9,6 +9,8 @@ sealed class Permission(vararg val permissions: String) {
 
     data object ReadContacts : Permission(Manifest.permission.READ_CONTACTS)
 
+    data object RecordAudio: Permission(Manifest.permission.RECORD_AUDIO)
+
     data object ImageCapture : Permission(
         Manifest.permission.CAMERA,
         Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -29,6 +31,7 @@ sealed class Permission(vararg val permissions: String) {
             Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION -> Location
             Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE -> Storage
             Manifest.permission.READ_CONTACTS -> ReadContacts
+            Manifest.permission.RECORD_AUDIO -> RecordAudio
             Manifest.permission.CAMERA -> Camera
             else -> throw IllegalArgumentException("Unknown permission: $permission")
         }
