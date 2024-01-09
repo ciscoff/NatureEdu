@@ -6,6 +6,7 @@ import android.hardware.camera2.CameraMetadata.LENS_FACING_BACK
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Size
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import dev.barabu.base.Logging

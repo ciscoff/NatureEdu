@@ -18,7 +18,6 @@ val Context.isActualGlEsSupporting: Boolean
                         || Build.MODEL.contains("Android SDK built for x86"));
     }
 
-
 val Context.screenSize: Size?
     get() {
         val wm = (this as? Activity)?.windowManager ?: return null

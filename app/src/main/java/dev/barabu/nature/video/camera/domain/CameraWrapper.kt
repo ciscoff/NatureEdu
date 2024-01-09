@@ -16,7 +16,9 @@ import dev.barabu.base.Logging
 import dev.barabu.base.extentions.camera2.isAutoExposureSupported
 import dev.barabu.base.extentions.camera2.isAutoWhiteBalanceSupported
 import dev.barabu.base.extentions.camera2.isContinuousAutoFocusSupported
+import dev.barabu.base.extentions.camera2.isFacingFront
 import dev.barabu.base.extentions.camera2.minFocusDist
+import dev.barabu.base.extentions.camera2.sensorOrientation
 
 /**
  * Сенсор камеры выравнивается по текущему положению "длинной" части экрана. Если текущая
@@ -64,7 +66,9 @@ class CameraWrapper(
     }
 
     fun release() = kotlin.runCatching {
-        cameraDevice?.close()
+        if (Thread.currentThread().isAlive) {
+            cameraDevice?.close()
+        }
     }
 
     /**
@@ -137,6 +141,75 @@ class CameraWrapper(
         if (characteristics.isAutoWhiteBalanceSupported()) {
             builder.set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
         }
+    }
+
+    /**
+     * ref:
+     * https://github.com/tomoima525/cameraLayout?tab=readme-ov-file#step-1-check-the-dimension-rotation
+     *
+     * Пока не используется. Альтернатива
+     * [dev.barabu.nature.video.camera.gl.CameraRenderer.updateSurfaceBufferSize]
+     */
+    private fun isDimensionSwapped(displayRotation: Int): Boolean {
+        val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+        var swappedDimensions = false
+        when (displayRotation) {
+            Surface.ROTATION_0, Surface.ROTATION_180 -> {
+                if (sensorOrientation == 90 || sensorOrientation == 270) {
+                    swappedDimensions = true
+                }
+            }
+
+            Surface.ROTATION_90, Surface.ROTATION_270 -> {
+                if (sensorOrientation == 0 || sensorOrientation == 180) {
+                    swappedDimensions = true
+                }
+            }
+        }
+        return swappedDimensions
+    }
+
+    //  sensorToDisplayRotation - это CW угол, на который надо повернуть raw-кадр сенсора, чтобы
+    //  картинка оказалась в своей натуральной ориентации (стала правильно сориентированной
+    //  для человека). Например, у смартфона ориентация Portrait и sensorOrientation 90 градусов.
+    //  При съёмке в натуральном положении потребуется повернуть кадр сенсора на 90 CW.
+    //  При съёмке в горизонтальном положении сенсор "видит мир" как человек и поворачивать его
+    //  кадр не потребуется, получим 0.
+    //
+    //  Натуральная ориентация - Portrait
+    //  Текущая ориентация - Portrait
+    //
+    //   Ось натурального направления ДИСПЛЕЯ
+    //   Ось текущего направления дисплея
+    //       ^ displayOrientation (CCW от натурального направления. В данном положении равен 0)
+    //       |
+    //   ---------
+    //   |  sen -|---> Ось sensorOrientation (прибита гвоздями и показывает
+    //   |  sor  |          CW угол от оси НАТУРАЛЬНОГО направления ДИСПЛЕЯ)
+    //   |       |
+    //   |       |
+    //   ---------
+    //   displayOrientation = 0
+    //   sensorToDisplayRotation = 90
+    //
+    //   Натуральная ориентация - Portrait
+    //   Текущая ориентация - Landscape
+    //
+    //                   Ось натурального направления ДИСПЛЕЯ
+    //                                   ^
+    //                            -------'-------
+    //   Ось текущего             |  sen        |
+    //   направления дисплея   <- |  sor -------|-> Ось sensorOrientation
+    //                            ---------------   (CW угол от НАТУРАЛЬНОГО направления ДИСПЛЕЯ)
+    //
+    //   displayOrientation = 90
+    //   sensorToDisplayRotation = 0
+    //
+    //  ref: https://github.com/tomoima525/cameraLayout/tree/master?tab=readme-ov-file#step-1-check-the-dimension-rotation
+    private fun sensorToDisplayRotation(displayOrientation: Int): Int {
+        val sign = if (characteristics.isFacingFront()) -1 else 1
+        val sensorOrientation = characteristics.sensorOrientation()
+        return (sensorOrientation - displayOrientation * sign + 360) % 360
     }
 
     companion object {

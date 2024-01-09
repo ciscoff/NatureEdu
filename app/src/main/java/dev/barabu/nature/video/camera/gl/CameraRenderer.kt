@@ -2,6 +2,7 @@ package dev.barabu.nature.video.camera.gl
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraManager
 import android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES
@@ -43,21 +44,21 @@ class CameraRenderer(
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
 
-    /**
-     * Рисовать "голый" кадр с камеры или учесть ориентацию и прочую хуйню
-     */
-    private val isDrawingRawPreview: Boolean = false
-
     /** https://source.android.com/docs/core/graphics/arch-st?hl=en */
     private lateinit var surfaceTexture: SurfaceTexture
 
     private lateinit var program: CameraProgram
 
+    /**
+     * INFO: не понятно какая именно Surface created, потому что мы сами создаем Surface,
+     *  нацеливаем на OES текстуру и передаем в камеру. Скорее всего метод сигнализирует о создании
+     *  потока для Renderer.
+     */
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         Logging.d("$TAG.onSurfaceCreated")
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
         program = CameraProgram(context)
-        setupOffScreenTexture()
+        setupOffScreenGlTexture()
         cameraWrapper.openCamera(
             context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
             surfaceTexture
@@ -72,10 +73,7 @@ class CameraRenderer(
         GLES20.glViewport(0, 0, width, height)
 
         updateModelMatrix(width.toFloat(), height.toFloat())
-
-        // NOTE: Благодаря этому пропали последние незначительные искажения,
-        //  которые оставались после работы ортогональной проекции.
-        surfaceTexture.setDefaultBufferSize(width, height)
+        updateSurfaceBufferSize(width, height)
     }
 
     override fun onDrawFrame(p0: GL10?) {
@@ -117,19 +115,13 @@ class CameraRenderer(
         program.apply {
             useProgram()
             bindVideoTexUniform(previewTexDescriptor)
-
-            if (isDrawingRawPreview) {
-                Matrix.setIdentityM(stMatrix, 0)
-                Matrix.setIdentityM(projMatrix, 0)
-            }
-
             bindStMatrixUniform(stMatrix)
             bindMvpMatrixUniform(modelMatrix)
             draw()
         }
     }
 
-    private fun setupOffScreenTexture() {
+    private fun setupOffScreenGlTexture() {
         val descriptor = IntArray(1)
         GLES20.glGenTextures(1, descriptor, 0)
 
@@ -147,6 +139,43 @@ class CameraRenderer(
     }
 
     /**
+     * references:
+     *   https://github.com/tomoima525/cameraLayout
+     *   https://developer.android.com/reference/android/graphics/SurfaceTexture#setDefaultBufferSize(int,%20int)
+     *     "The new default buffer size will take effect the next time the image producer
+     *     requests a buffer to fill"
+     *
+     *  INFO: Такой swap размеров позволяет корректно работать в любой ориентации. Проблема с
+     *   ориентацией обнаружилась при старте активити в положении Landscape и была исправлена
+     *   добавлением ветки Configuration.ORIENTATION_LANDSCAPE.
+     *
+     *  Не очень понятно зачем это делать, но получается, что всякий раз устанавливается
+     *  размер "вертикального" буфера: ширина меньше высоты. В интернетах есть примеры с методом
+     *  [dev.barabu.nature.video.camera.domain.CameraWrapper.isDimensionSwapped].
+     *  Он фактически отдает true при портретной ориентации телефона и false при горизонтальной.
+     *  Можно конечно использовать эти результаты для swap, но я просто проверяю
+     *  context.resources.configuration.orientation
+     *
+     *  ref:
+     *  https://github.com/tomoima525/cameraLayout?tab=readme-ov-file#step-1-check-the-dimension-rotation
+     */
+    private fun updateSurfaceBufferSize(width: Int, height: Int) {
+        when (context.resources.configuration.orientation) {
+            Configuration.ORIENTATION_PORTRAIT -> {
+                surfaceTexture.setDefaultBufferSize(width, height)
+            }
+
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                surfaceTexture.setDefaultBufferSize(height, width)
+            }
+
+            else -> {
+                surfaceTexture.setDefaultBufferSize(width, height)
+            }
+        }
+    }
+
+    /**
      * Будем настраивать трансформацию аналогично TextureView.
      * https://developer.android.com/reference/android/view/TextureView#setTransform(android.graphics.Matrix)
      *
@@ -158,8 +187,8 @@ class CameraRenderer(
      *
      *   |scaleM| * |rotateM| * |vertex|
      *
-     * Если сделать наоборот, то скалированный вертекс улетит не туда после поворота и
-     * поплывёт логика в методе [scaleModel]
+     * Если сделать наоборот, то скалированный вертекс улетит не туда после поворота и поплывёт
+     * логика в методе [scaleModel]
      *
      * INFO: По поводу порядка применения матриц см [dev.barabu.base.matrix.TransformationsOrder]
      */
