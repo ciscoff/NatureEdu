@@ -143,7 +143,10 @@ class CameraRenderer(
      *   https://github.com/tomoima525/cameraLayout
      *   https://developer.android.com/reference/android/graphics/SurfaceTexture#setDefaultBufferSize(int,%20int)
      *     "The new default buffer size will take effect the next time the image producer
-     *     requests a buffer to fill"
+     *     requests a buffer to fill. ...... For OpenGL ES, the EGLSurface should be destroyed
+     *     (via eglDestroySurface), made not-current (via eglMakeCurrent), and then recreated
+     *     (via eglCreateWindowSurface) to ensure that the new default size has taken effect."
+     * NOTE: То есть в нашем случае setDefaultBufferSize срабатывает только один раз - первый!
      *
      *  INFO: Такой swap размеров позволяет корректно работать в любой ориентации. Проблема с
      *   ориентацией обнаружилась при старте активити в положении Landscape и была исправлена
