@@ -163,7 +163,24 @@ class CameraRenderer(
      *  https://github.com/tomoima525/cameraLayout?tab=readme-ov-file#step-1-check-the-dimension-rotation
      */
     private fun updateSurfaceBufferSize(width: Int, height: Int) {
+
+        // NOTE: Это работает на телефоне и планшете (не фига не понял почему)
         when (context.resources.configuration.orientation) {
+            Configuration.ORIENTATION_PORTRAIT -> {
+                surfaceTexture.setDefaultBufferSize(width, width)
+            }
+
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                surfaceTexture.setDefaultBufferSize(height,height)
+            }
+
+            else -> {
+                surfaceTexture.setDefaultBufferSize(width, height)
+            }
+        }
+
+        // NOTE: Это работает на телефоне, НО не работает на планшете
+        /*when (context.resources.configuration.orientation) {
             Configuration.ORIENTATION_PORTRAIT -> {
                 surfaceTexture.setDefaultBufferSize(width, height)
             }
@@ -175,7 +192,7 @@ class CameraRenderer(
             else -> {
                 surfaceTexture.setDefaultBufferSize(width, height)
             }
-        }
+        }*/
     }
 
     /**

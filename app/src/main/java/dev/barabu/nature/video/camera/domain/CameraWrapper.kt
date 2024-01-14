@@ -30,6 +30,9 @@ class CameraWrapper(
     private val cameraHandler: Handler
 ) {
 
+    val sensorOrientation: Int?
+        get() = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+
     private lateinit var surfaceTexture: SurfaceTexture
 
     private var cameraDevice: CameraDevice? = null
@@ -150,8 +153,8 @@ class CameraWrapper(
      * Пока не используется. Альтернатива
      * [dev.barabu.nature.video.camera.gl.CameraRenderer.updateSurfaceBufferSize]
      */
-    private fun isDimensionSwapped(displayRotation: Int): Boolean {
-        val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+    fun isDimensionSwapped(displayRotation: Int): Boolean {
+        Logging.d("$TAG.isDimensionSwapped")
         var swappedDimensions = false
         when (displayRotation) {
             Surface.ROTATION_0, Surface.ROTATION_180 -> {
@@ -213,6 +216,8 @@ class CameraWrapper(
     }
 
     companion object {
+
+        private const val TAG = "CameraWrapper"
 
         /**
          * ref: https://www.youtube.com/watch?v=IPJIjlxRrLI
