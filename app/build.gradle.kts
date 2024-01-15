@@ -53,9 +53,11 @@ android {
     namespace = "dev.barabu.nature"
     compileSdk = 34
 
+    val signConfigName = "sign"
+
     defaultConfig {
         applicationId = "dev.barabu.nature"
-        minSdk = 24
+        minSdk = 28
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -67,13 +69,28 @@ android {
         saveVersions()
     }
 
+    signingConfigs {
+
+        create(signConfigName) {
+            keyAlias = "key0"
+            keyPassword = "123456"
+            storeFile = file("key_store/barabu.jks")
+            storePassword = "123456"
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName(signConfigName)
+        }
+        debug {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName(signConfigName)
         }
     }
     compileOptions {
