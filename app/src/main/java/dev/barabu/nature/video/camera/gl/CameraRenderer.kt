@@ -21,6 +21,7 @@ import android.view.Surface
 import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
+import dev.barabu.nature.R
 import dev.barabu.nature.video.camera.domain.CameraWrapper
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -164,35 +165,38 @@ class CameraRenderer(
      */
     private fun updateSurfaceBufferSize(width: Int, height: Int) {
 
-        // NOTE: Это работает на телефоне и планшете (не фига не понял почему)
-        when (context.resources.configuration.orientation) {
-            Configuration.ORIENTATION_PORTRAIT -> {
-                surfaceTexture.setDefaultBufferSize(width, width)
-            }
+        if (context.resources.getBoolean(R.bool.isTab)) {
 
-            Configuration.ORIENTATION_LANDSCAPE -> {
-                surfaceTexture.setDefaultBufferSize(height,height)
-            }
+            // NOTE: Это работает на телефоне (кроме Samsung A12) и планшете (не фига не понял почему)
+            when (context.resources.configuration.orientation) {
+                Configuration.ORIENTATION_PORTRAIT -> {
+                    surfaceTexture.setDefaultBufferSize(width, width)
+                }
 
-            else -> {
-                surfaceTexture.setDefaultBufferSize(width, height)
+                Configuration.ORIENTATION_LANDSCAPE -> {
+                    surfaceTexture.setDefaultBufferSize(height, height)
+                }
+
+                else -> {
+                    surfaceTexture.setDefaultBufferSize(width, height)
+                }
+            }
+        } else {
+            // NOTE: Это работает на телефоне, НО не работает на планшете
+            when (context.resources.configuration.orientation) {
+                Configuration.ORIENTATION_PORTRAIT -> {
+                    surfaceTexture.setDefaultBufferSize(width, height)
+                }
+
+                Configuration.ORIENTATION_LANDSCAPE -> {
+                    surfaceTexture.setDefaultBufferSize(height, width)
+                }
+
+                else -> {
+                    surfaceTexture.setDefaultBufferSize(width, height)
+                }
             }
         }
-
-        // NOTE: Это работает на телефоне, НО не работает на планшете
-        /*when (context.resources.configuration.orientation) {
-            Configuration.ORIENTATION_PORTRAIT -> {
-                surfaceTexture.setDefaultBufferSize(width, height)
-            }
-
-            Configuration.ORIENTATION_LANDSCAPE -> {
-                surfaceTexture.setDefaultBufferSize(height, width)
-            }
-
-            else -> {
-                surfaceTexture.setDefaultBufferSize(width, height)
-            }
-        }*/
     }
 
     /**
