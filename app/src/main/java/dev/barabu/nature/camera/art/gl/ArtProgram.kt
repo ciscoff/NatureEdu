@@ -1,4 +1,4 @@
-package dev.barabu.nature.video.camera.gl
+package dev.barabu.nature.camera.art.gl
 
 import android.content.Context
 import android.opengl.GLES11Ext
@@ -8,18 +8,18 @@ import dev.barabu.base.domain.Attribute
 import dev.barabu.base.domain.Model
 import dev.barabu.base.gl.ShaderProgram
 import dev.barabu.nature.R
-import dev.barabu.nature.video.camera.domain.CamScreen
+import dev.barabu.nature.camera.art.domain.ArtScreen
 
-class CameraProgram(
+class ArtProgram(
     context: Context,
-    vertexShaderResourceId: Int = R.raw.camera_vertex_shader,
-    fragmentShaderResourceId: Int = R.raw.camera_fragment_shader,
+    vertexShaderResourceId: Int = R.raw.camera_art_vertex_shader,
+    fragmentShaderResourceId: Int = R.raw.camera_art_fragment_shader,
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
 ) {
 
-    override val model: Model = CamScreen()
+    override val model: Model = ArtScreen()
 
     private val aPositionDescriptor: Int =
         GLES20.glGetAttribLocation(programDescriptor, A_POSITION)

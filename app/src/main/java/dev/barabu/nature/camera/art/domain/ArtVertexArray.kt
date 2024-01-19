@@ -1,11 +1,11 @@
-package dev.barabu.nature.video.camera.domain
+package dev.barabu.nature.camera.art.domain
 
 import android.opengl.GLES30
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 
-class CameraVertexArray(
+class ArtVertexArray(
     private val vertexBuffer: VertexBuffer,
     private val polygonElements: ElementBuffer,
 ) {

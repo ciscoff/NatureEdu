@@ -1,4 +1,4 @@
-package dev.barabu.nature.video.camera.gl
+package dev.barabu.nature.camera.preview.gl
 
 import android.app.Activity
 import android.content.Context
@@ -22,11 +22,11 @@ import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.nature.R
-import dev.barabu.nature.video.camera.domain.CameraWrapper
+import dev.barabu.nature.camera.preview.domain.CameraWrapper
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class CameraRenderer(
+class PreviewRenderer(
     private val glSurfaceView: GLSurfaceView,
     private val cameraWrapper: CameraWrapper,
 ) : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
@@ -48,7 +48,7 @@ class CameraRenderer(
     /** https://source.android.com/docs/core/graphics/arch-st?hl=en */
     private lateinit var surfaceTexture: SurfaceTexture
 
-    private lateinit var program: CameraProgram
+    private lateinit var program: PreviewProgram
 
     /**
      * INFO: не понятно какая именно Surface created, потому что мы сами создаем Surface,
@@ -58,7 +58,7 @@ class CameraRenderer(
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         Logging.d("$TAG.onSurfaceCreated")
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
-        program = CameraProgram(context)
+        program = PreviewProgram(context)
         setupOffScreenGlTexture()
         cameraWrapper.openCamera(
             context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
@@ -273,7 +273,7 @@ class CameraRenderer(
     }
 
     companion object {
-        private const val TAG = "CameraRenderer"
+        private const val TAG = "PreviewRenderer"
 
         private val DISPLAY_ROTATIONS = mapOf(
             Surface.ROTATION_0 to 0,

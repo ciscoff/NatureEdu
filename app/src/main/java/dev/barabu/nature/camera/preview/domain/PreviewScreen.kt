@@ -1,4 +1,4 @@
-package dev.barabu.nature.video.camera.domain
+package dev.barabu.nature.camera.preview.domain
 
 import android.opengl.GLES20
 import dev.barabu.base.BYTES_PER_FLOAT
@@ -9,9 +9,9 @@ import dev.barabu.base.domain.Model
 import dev.barabu.base.gl.ElementBuffer
 import dev.barabu.base.gl.VertexBuffer
 
-class CamScreen : Model {
+class PreviewScreen : Model {
 
-    private val vertexArray: CameraVertexArray = CameraVertexArray(
+    private val vertexArray: PreviewVertexArray = PreviewVertexArray(
         VertexBuffer(vertices),
         ElementBuffer(elements)
     )

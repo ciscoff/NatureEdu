@@ -1,4 +1,4 @@
-package dev.barabu.nature.video.camera.domain
+package dev.barabu.nature.camera.preview.domain
 
 import android.annotation.SuppressLint
 import android.graphics.SurfaceTexture
@@ -30,7 +30,7 @@ class CameraWrapper(
     private val cameraHandler: Handler
 ) {
 
-    val sensorOrientation: Int?
+    private val sensorOrientation: Int?
         get() = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
 
     private lateinit var surfaceTexture: SurfaceTexture
@@ -216,51 +216,6 @@ class CameraWrapper(
     }
 
     companion object {
-
         private const val TAG = "CameraWrapper"
-
-        /**
-         * ref: https://www.youtube.com/watch?v=IPJIjlxRrLI
-         */
-        fun getCameraId(
-            manager: CameraManager,
-            lens: Int
-        ): String {
-            var deviceId = emptyList<String>()
-
-            try {
-                val camIdList = manager.cameraIdList
-                deviceId = camIdList.filter { id ->
-                    lens == cameraCharacteristics(
-                        manager,
-                        id,
-                        LENS_FACING
-                    )
-                }
-            } catch (e: CameraAccessException) {
-                Logging.e("${e.message}")
-            }
-            return deviceId[0]
-        }
-
-        private fun <T> cameraCharacteristics(
-            manager: CameraManager,
-            cameraId: String,
-            key: CameraCharacteristics.Key<T>
-        ): T? {
-            val characteristics = manager.getCameraCharacteristics(cameraId)
-
-            return when (key) {
-                LENS_FACING -> {
-                    characteristics.get(key)
-                }
-
-                SCALER_STREAM_CONFIGURATION_MAP -> {
-                    characteristics.get(key)
-                }
-
-                else -> throw IllegalArgumentException("Key not recognized")
-            }
-        }
     }
 }

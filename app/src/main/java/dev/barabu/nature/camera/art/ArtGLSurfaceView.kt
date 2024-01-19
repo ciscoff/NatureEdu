@@ -1,28 +1,31 @@
-package dev.barabu.nature.video.camera
+package dev.barabu.nature.camera.art
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.opengl.GLSurfaceView
 import dev.barabu.base.Logging
 import dev.barabu.base.extentions.isActualGlEsSupporting
-import dev.barabu.nature.video.camera.domain.CameraWrapper
-import dev.barabu.nature.video.camera.gl.CameraRenderer
+import dev.barabu.nature.camera.art.domain.Camera
+import dev.barabu.nature.camera.art.gl.ArtRenderer
 
 @SuppressLint("ViewConstructor")
-class CameraSurfaceView(context: Context, cameraWrapper: CameraWrapper) : GLSurfaceView(context) {
+class ArtGLSurfaceView(
+    context: Context,
+    cameras: Map<Int, Camera>
+) : GLSurfaceView(context) {
 
-    private var cameraRenderer: CameraRenderer
+    private var renderer: ArtRenderer
     private var isRendererSet = false
 
     init {
-        cameraRenderer = CameraRenderer(this, cameraWrapper)
+        renderer = ArtRenderer(this, cameras)
 
         if (context.isActualGlEsSupporting) {
             setEGLContextClientVersion(3)
 
             setEGLConfigChooser(8, 8, 8, 8, 16, 0)
 
-            setRenderer(cameraRenderer)
+            setRenderer(renderer)
             renderMode = RENDERMODE_WHEN_DIRTY
             isRendererSet = true
         } else {

@@ -1,27 +1,19 @@
-package dev.barabu.nature.video.camera
+package dev.barabu.nature.camera.art
 
-import android.annotation.SuppressLint
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata.LENS_FACING_BACK
+import android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Size
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import dev.barabu.base.Logging
-import dev.barabu.nature.video.camera.domain.CameraWrapper
-import dev.barabu.nature.video.camera.domain.CameraWrapper.Companion.getCameraId
+import dev.barabu.base.camera.getCameraId
+import dev.barabu.nature.camera.art.domain.Camera
 
-/**
- * refs:
- * https://habr.com/ru/articles/468083/
- * https://habr.com/ru/articles/480878/
- */
-class CameraActivity : AppCompatActivity() {
+class ArtActivity : AppCompatActivity() {
 
-    private lateinit var glSurfaceView: CameraSurfaceView
-    private lateinit var backFacingCam: CameraWrapper
+    private lateinit var glSurfaceView: ArtGLSurfaceView
 
     private val cameraThread: HandlerThread by lazy {
         HandlerThread(packageName).apply { start() }
@@ -30,14 +22,15 @@ class CameraActivity : AppCompatActivity() {
         Handler(cameraThread.looper)
     }
 
-    @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
-        Logging.d("WOWOW onCreate")
         super.onCreate(savedInstanceState)
 
-        backFacingCam = fetchCamera(LENS_FACING_BACK)
+        val cameras = mapOf(
+            LENS_FACING_BACK to fetchCamera(LENS_FACING_BACK),
+            /*LENS_FACING_FRONT to fetchCamera(LENS_FACING_FRONT)*/
+        )
 
-        glSurfaceView = CameraSurfaceView(this, backFacingCam).apply {
+        glSurfaceView = ArtGLSurfaceView(this, cameras).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -59,12 +52,12 @@ class CameraActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraThread.quitSafely()
-        backFacingCam.release()
+        // todo: надо как-то очищать ресурсы камер
     }
 
-    private fun fetchCamera(lens: Int): CameraWrapper {
+    private fun fetchCamera(lens: Int): Camera {
         val manager = getSystemService(CAMERA_SERVICE) as CameraManager
         val cameraId = getCameraId(manager, lens)
-        return CameraWrapper(cameraId, manager.getCameraCharacteristics(cameraId), cameraHandler)
+        return Camera(cameraId, manager.getCameraCharacteristics(cameraId), cameraHandler, this)
     }
 }
