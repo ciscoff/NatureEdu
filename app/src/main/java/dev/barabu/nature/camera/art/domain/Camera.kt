@@ -46,9 +46,6 @@ class Camera(
         }
     }
 
-    private val sensorOrientation: Int?
-        get() = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
-
     private lateinit var cameraDevice: CameraDevice
     private lateinit var captureSession: CameraCaptureSession
     private lateinit var captureRequest: CaptureRequest
@@ -118,6 +115,8 @@ class Camera(
 
             /** Called after all captures have completed */
             override fun onClosed(session: CameraCaptureSession) {
+                Logging.d("$TAG CameraCaptureSession.StateCallback.onClosed device: ${session.device.id}")
+                cameraDevice.close()
             }
         }
 
@@ -138,6 +137,15 @@ class Camera(
             addTarget(target)
             setup3AControls()
         }.build()
+
+    fun close() {
+        if (::captureSession.isInitialized) {
+            captureSession.close()
+        }
+        if (::cameraDevice.isInitialized) {
+            cameraDevice.close()
+        }
+    }
 
     /**
      * ref: https://github.com/googlearchive/android-Camera2Raw
@@ -179,5 +187,9 @@ class Camera(
         if (characteristics.isAutoWhiteBalanceSupported()) {
             set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
         }
+    }
+
+    companion object {
+        private const val TAG = "Camera"
     }
 }

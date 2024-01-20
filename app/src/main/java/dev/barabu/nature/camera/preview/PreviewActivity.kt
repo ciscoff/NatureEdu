@@ -31,7 +31,6 @@ class PreviewActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
-        Logging.d("WOWOW onCreate")
         super.onCreate(savedInstanceState)
 
         backFacingCam = fetchCamera(LENS_FACING_BACK)

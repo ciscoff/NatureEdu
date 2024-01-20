@@ -19,14 +19,20 @@ import android.opengl.Matrix
 import android.view.Surface
 import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
+import dev.barabu.base.Logging
 import dev.barabu.nature.R
-import dev.barabu.nature.camera.art.domain.Camera
+import dev.barabu.nature.camera.art.domain.CameraWrapper
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class ArtRenderer(
     private val glSurfaceView: GLSurfaceView,
-    private val cameras: Map<Int, Camera>
+    private val cameras: Flow<CameraWrapper>
 ) : GLSurfaceView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
 
@@ -49,8 +55,15 @@ class ArtRenderer(
         setupOffScreenGlTexture()
         program = ArtProgram(context)
 
-        with(context.getSystemService(Context.CAMERA_SERVICE) as CameraManager) {
-            cameras.values.forEach { cam -> cam.initializeCamera(this, surfaceTexture) }
+        CoroutineScope(Dispatchers.Unconfined + CoroutineExceptionHandler { _, e ->
+            Logging.e(e)
+        }).launch {
+            cameras.collect { wrapper ->
+                wrapper.camera?.initializeCamera(
+                    context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
+                    surfaceTexture
+                )
+            }
         }
     }
 
@@ -80,6 +93,10 @@ class ArtRenderer(
             isSurfaceUpdated = true
             glSurfaceView.requestRender()
         }
+    }
+
+    fun stopCapture(wrapper: CameraWrapper) {
+        wrapper.camera?.close()
     }
 
     private fun drawPreview() {
@@ -166,7 +183,6 @@ class ArtRenderer(
     private fun rotateModel() {
         Matrix.rotateM(modelMatrix, 0, displayRotation.toFloat(), 0f, 0f, 1f)
     }
-
 
     companion object {
         private const val TAG = "ArtRenderer"
