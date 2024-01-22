@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dev.barabu.widgets.MenuView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_menu"
+    android:layout_width="@dimen/w_menu_width"
+    android:layout_height="wrap_content"
+    android:background="@drawable/w_shape_menu_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="@dimen/w_menu_padding">
+
+
+    <ImageView
+        android:id="@+id/w_menu_button_blur"
+        style="@style/style_menu_button_item"
+        android:contentDescription="@null"
+        android:src="@drawable/w_ic_blur_1" />
+
+    <ImageView
+        android:id="@+id/w_menu_button_grey"
+        style="@style/style_menu_button_item"
+        android:contentDescription="@null"
+        android:src="@drawable/w_ic_grey_1" />
+
+    <ImageView
+        android:id="@+id/w_menu_button_colored"
+        style="@style/style_menu_button_item"
+        android:contentDescription="@null"
+        android:src="@drawable/w_ic_colored_1" />
+
+    <View
+        android:id="@+id/separator"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="3dp"
+        android:layout_marginVertical="16dp"
+        android:background="@drawable/w_shape_separator"/>
+
+    <ImageView
+        android:id="@+id/w_menu_button_main"
+        style="@style/style_menu_button_main"
+        android:contentDescription="@null"
+        android:src="@drawable/w_ic_camera_swap" />
+
+</dev.barabu.widgets.MenuView>
