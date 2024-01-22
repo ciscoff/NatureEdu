@@ -32,7 +32,7 @@ import kotlin.coroutines.suspendCoroutine
  * https://github.com/android/camera-samples/blob/main/Camera2Video/app/src/main/java/com/example/android/camera2/video/fragments/PreviewFragment.kt#L255
  */
 class Camera(
-    private val cameraId: String,
+    val cameraId: String,
     private val characteristics: CameraCharacteristics,
     private val cameraHandler: Handler,
     private val lifecycleOwner: LifecycleOwner
@@ -109,7 +109,7 @@ class Camera(
 
             override fun onConfigureFailed(session: CameraCaptureSession) {
                 val exc = RuntimeException("Camera ${device.id} session configuration failed")
-                Logging.e(exc)
+                Logging.e(exc, TAG)
                 cont.resumeWithException(exc)
             }
 

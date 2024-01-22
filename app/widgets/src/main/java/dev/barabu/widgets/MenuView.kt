@@ -43,7 +43,7 @@ class MenuView @JvmOverloads constructor(
     private var eventDownPoint = PointF()
 
     private val viewModel by lazy(LazyThreadSafetyMode.NONE) {
-        ViewModelProvider(context as AppCompatActivity).get(MenuViewModel::class.java)
+        ViewModelProvider(context as AppCompatActivity)[MenuViewModel::class.java]
     }
 
     private val detector: GestureDetectorCompat by lazy {

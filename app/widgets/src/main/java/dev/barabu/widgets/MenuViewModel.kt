@@ -20,6 +20,7 @@ class MenuViewModel : ViewModel() {
     val menuState = _menuState as LiveData<MenuState>
 
     fun onSwapClick() {
+        Log.d(TAG, "onSwapClick")
         Collections.rotate(lens, 1)
         _menuState.value = MenuState(lens[0], effect, form)
     }
@@ -43,11 +44,13 @@ class MenuViewModel : ViewModel() {
     }
 
     fun onExpandMenu() {
+        Log.d(TAG, "onExpandMenu")
         form = Form.Expanded
         _menuState.value = MenuState(lens[0], effect, form)
     }
 
     fun onCollapseMenu() {
+        Log.d(TAG, "onCollapseMenu")
         form = Form.Collapsed
         _menuState.value = MenuState(lens[0], effect, form)
     }

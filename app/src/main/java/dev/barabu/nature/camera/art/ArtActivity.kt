@@ -6,19 +6,23 @@ import android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
-import android.view.MotionEvent
-import android.view.View
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import dev.barabu.base.Logging
 import dev.barabu.base.camera.getCameraId
 import dev.barabu.base.extentions.isActualGlEsSupporting
 import dev.barabu.nature.camera.art.domain.Camera
 import dev.barabu.nature.camera.art.domain.CameraWrapper
 import dev.barabu.nature.camera.art.gl.ArtRenderer
+import dev.barabu.widgets.MenuViewModel
+import dev.barabu.widgets.R
+import dev.barabu.widgets.domain.Lens
 import kotlinx.coroutines.flow.MutableStateFlow
-import java.util.Collections
 
 class ArtActivity : AppCompatActivity() {
 
@@ -26,7 +30,6 @@ class ArtActivity : AppCompatActivity() {
     private lateinit var glSurfaceView: ArtGLSurfaceView
     private lateinit var renderer: ArtRenderer
 
-    private val cameras = arrayListOf(LENS_FACING_BACK, LENS_FACING_FRONT)
     private var isRendererSet = false
 
     private val cameraThread: HandlerThread by lazy {
@@ -36,27 +39,14 @@ class ArtActivity : AppCompatActivity() {
         Handler(cameraThread.looper)
     }
 
-    private val touchListener = View.OnTouchListener { v, event ->
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> true
-            MotionEvent.ACTION_MOVE -> true
-            MotionEvent.ACTION_UP -> {
-                renderer.stopCapture(cameraState.value)
-                Collections.rotate(cameras, 1)
-                Handler(Looper.getMainLooper()).postDelayed({
-                    cameraState.tryEmit(CameraWrapper(fetchCamera(cameras[0])))
-                }, 100)
-                v.performClick()
-            }
-
-            else -> false
-        }
+    private val viewModel by lazy(LazyThreadSafetyMode.NONE) {
+        ViewModelProvider(this as AppCompatActivity)[MenuViewModel::class.java]
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        cameraState = MutableStateFlow(CameraWrapper(fetchCamera(cameras[0])))
+        cameraState = MutableStateFlow(CameraWrapper(null))
 
         glSurfaceView = ArtGLSurfaceView(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -73,9 +63,19 @@ class ArtActivity : AppCompatActivity() {
             } else {
                 Logging.d("This device does not support OpenGL ES 3.0.")
             }
-            setOnTouchListener(touchListener)
         }
+
         setContentView(glSurfaceView)
+
+        val menu = createSideMenu()
+        (glSurfaceView.parent as FrameLayout).addView(menu)
+
+        viewModel.menuState.observe(this) { menuState ->
+            when (menuState.lens) {
+                Lens.Back -> swapCamera(LENS_FACING_BACK)
+                Lens.Front -> swapCamera(LENS_FACING_FRONT)
+            }
+        }
     }
 
     override fun onResume() {
@@ -103,8 +103,41 @@ class ArtActivity : AppCompatActivity() {
     }
 
     private fun fetchCamera(lens: Int): Camera {
+        Logging.d("$TAG.fetchCamera")
         val manager = getSystemService(CAMERA_SERVICE) as CameraManager
         val cameraId = getCameraId(manager, lens)
         return Camera(cameraId, manager.getCameraCharacteristics(cameraId), cameraHandler, this)
+    }
+
+    private fun swapCamera(lens: Int) {
+        Logging.d("$TAG.swapCamera")
+        cameraState.tryEmit(CameraWrapper(fetchCamera(lens)))
+    }
+
+    private fun createSideMenu(): LinearLayout {
+        Logging.d("$TAG.createSideMenu")
+
+        val view = LayoutInflater.from(this)
+            .inflate(R.layout.w_layout_menu, null, false) as LinearLayout
+
+        view.apply {
+            layoutParams = FrameLayout.LayoutParams(
+                resources.getDimensionPixelOffset(R.dimen.w_menu_width),
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM or Gravity.END
+            ).apply {
+                setMargins(
+                    0,
+                    0,
+                    resources.getDimensionPixelOffset(R.dimen.w_menu_margin_end),
+                    resources.getDimensionPixelOffset(R.dimen.w_menu_margin_bottom)
+                )
+            }
+            return view
+        }
+    }
+
+    companion object {
+        private const val TAG = "ArtActivity"
     }
 }

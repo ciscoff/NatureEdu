@@ -21,6 +21,7 @@ import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.nature.R
+import dev.barabu.nature.camera.art.domain.Camera
 import dev.barabu.nature.camera.art.domain.CameraWrapper
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +48,8 @@ class ArtRenderer(
     private val stMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
 
+    private var prevCamera: Camera? = null
+
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
 
@@ -59,10 +62,16 @@ class ArtRenderer(
             Logging.e(e)
         }).launch {
             cameras.collect { wrapper ->
-                wrapper.camera?.initializeCamera(
-                    context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
-                    surfaceTexture
-                )
+                wrapper.camera?.let { camera ->
+                    if (camera.cameraId != prevCamera?.cameraId) {
+                        prevCamera?.close()
+                        prevCamera = camera
+                        camera.initializeCamera(
+                            context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
+                            surfaceTexture
+                        )
+                    }
+                }
             }
         }
     }
@@ -96,6 +105,7 @@ class ArtRenderer(
     }
 
     fun stopCapture(wrapper: CameraWrapper) {
+        Logging.d("$TAG.stopCapture")
         wrapper.camera?.close()
     }
 
