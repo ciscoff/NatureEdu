@@ -5,6 +5,7 @@
 
     <!-- Menu Container -->
     <dimen name="w_menu_width">54dp</dimen>
+    <dimen name="w_menu_min_height">54dp</dimen>
     <dimen name="w_menu_padding">2.0dp</dimen>
     <dimen name="w_menu_round_rect_radius">27dp</dimen>
 

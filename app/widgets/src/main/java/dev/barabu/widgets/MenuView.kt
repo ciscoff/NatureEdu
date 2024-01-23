@@ -2,6 +2,8 @@ package dev.barabu.widgets
 
 import android.content.Context
 import android.graphics.PointF
+import android.transition.ChangeBounds
+import android.transition.Explode
 import android.transition.TransitionManager
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -14,6 +16,7 @@ import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.children
 import androidx.lifecycle.ViewModelProvider
 import dev.barabu.base.Logging
+import dev.barabu.base.utils.isMiUi
 import dev.barabu.widgets.domain.Effect
 import dev.barabu.widgets.domain.Form
 import dev.barabu.widgets.domain.Lens
@@ -181,8 +184,21 @@ class MenuView @JvmOverloads constructor(
     }
 
     private fun updateForm(form: Form) {
-        TransitionManager.beginDelayedTransition(this)
-        val visibility = if (form == Form.Expanded) View.VISIBLE else View.GONE
+
+        val (transition, visibility) = if (form == Form.Expanded) {
+            Explode() to View.VISIBLE
+        } else {
+            ChangeBounds() to View.GONE
+        }
+
+        // NOTE: У Xiaomi (MIUI 13+) не работает transition при сворачивании, если под меню
+        //  находится GLSurfaceView. Если обычная View, то все ОК. Поэтому отключаем transition
+        //  для сворачивания, если работаем на MIUI.
+        // NOTE: И вообще transition работает по разному на разных девайсах.
+        if (!(isMiUi && form == Form.Collapsed)) {
+            TransitionManager.beginDelayedTransition(this, transition)
+        }
+
         children.asIterable().forEach {
             if (it.id != R.id.w_menu_button_main) {
                 it.visibility = visibility
