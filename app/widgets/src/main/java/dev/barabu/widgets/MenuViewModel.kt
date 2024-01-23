@@ -1,12 +1,15 @@
 package dev.barabu.widgets
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import dev.barabu.base.Logging
 import dev.barabu.widgets.domain.Effect
+import dev.barabu.widgets.domain.EffectWrapper
 import dev.barabu.widgets.domain.Form
+import dev.barabu.widgets.domain.FormWrapper
 import dev.barabu.widgets.domain.Lens
+import dev.barabu.widgets.domain.LensWrapper
 import dev.barabu.widgets.domain.MenuState
 import java.util.Collections
 
@@ -16,43 +19,52 @@ class MenuViewModel : ViewModel() {
     private val lens = arrayListOf(Lens.Back, Lens.Front)
     private var form: Form = Form.Collapsed
 
-    private val _menuState = MutableLiveData(MenuState(lens[0], effect, form))
+    private val noLens = LensWrapper(null)
+    private val noEffect = EffectWrapper(null)
+    private val noForm = FormWrapper(null)
+
+    private val _menuState = MutableLiveData(MenuState(noLens, noEffect, noForm))
     val menuState = _menuState as LiveData<MenuState>
 
+    fun onActivityStart() {
+        Logging.d("$TAG.onActivityStart")
+        _menuState.value = MenuState(LensWrapper(lens[0]), EffectWrapper(effect), FormWrapper(form))
+    }
+
     fun onSwapClick() {
-        Log.d(TAG, "onSwapClick")
+        Logging.d("$TAG.onSwapClick")
         Collections.rotate(lens, 1)
-        _menuState.value = MenuState(lens[0], effect, form)
+        _menuState.value = MenuState(LensWrapper(lens[0]), noEffect, noForm)
     }
 
     fun onGreyClick() {
-        Log.d(TAG, "onGreyClick")
+        Logging.d("$TAG.onGreyClick")
         effect = Effect.Grey
-        _menuState.value = MenuState(lens[0], effect, form)
+        _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
     }
 
     fun onBlurClick() {
-        Log.d(TAG, "onBlurClick")
+        Logging.d("$TAG.onBlurClick")
         effect = Effect.Blur
-        _menuState.value = MenuState(lens[0], effect, form)
+        _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
     }
 
     fun onColoredClick() {
-        Log.d(TAG, "onColoredClick")
+        Logging.d("$TAG.onColoredClick")
         effect = Effect.Colored
-        _menuState.value = MenuState(lens[0], effect, form)
+        _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
     }
 
     fun onExpandMenu() {
-        Log.d(TAG, "onExpandMenu")
+        Logging.d("$TAG.onExpandMenu")
         form = Form.Expanded
-        _menuState.value = MenuState(lens[0], effect, form)
+        _menuState.value = MenuState(noLens, noEffect, FormWrapper(form))
     }
 
     fun onCollapseMenu() {
-        Log.d(TAG, "onCollapseMenu")
+        Logging.d("$TAG.onCollapseMenu")
         form = Form.Collapsed
-        _menuState.value = MenuState(lens[0], effect, form)
+        _menuState.value = MenuState(noLens, noEffect, FormWrapper(form))
     }
 
     companion object {

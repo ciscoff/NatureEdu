@@ -1,3 +1,3 @@
 package dev.barabu.widgets.domain
 
-class MenuState(val lens: Lens, val effect: Effect, val form: Form)
+class MenuState(val lens: LensWrapper, val effect: EffectWrapper, val form: FormWrapper)

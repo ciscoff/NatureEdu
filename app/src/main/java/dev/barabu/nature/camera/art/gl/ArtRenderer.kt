@@ -26,6 +26,7 @@ import dev.barabu.nature.camera.art.domain.CameraWrapper
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.microedition.khronos.egl.EGLConfig
@@ -53,7 +54,15 @@ class ArtRenderer(
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
 
+    /**
+     * Activity в состояниях START/RESUME передает только камеры LENS_FACING_BACK/LENS_FACING_FRONT.
+     * Переходя в STOP она передает null. В следующий START метод onSurfaceCreated будет вызван
+     * заново и будет создана новая SurfaceTexture. То есть получив null нужно закрыть текущую
+     * камеру и остановить корутину.
+     */
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        Logging.d("$TAG.onSurfaceCreated")
+
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
         setupOffScreenGlTexture()
         program = ArtProgram(context)
@@ -62,21 +71,26 @@ class ArtRenderer(
             Logging.e(e)
         }).launch {
             cameras.collect { wrapper ->
-                wrapper.camera?.let { camera ->
-                    if (camera.cameraId != prevCamera?.cameraId) {
-                        prevCamera?.close()
-                        prevCamera = camera
-                        camera.initializeCamera(
-                            context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
-                            surfaceTexture
-                        )
-                    }
+                val camera = wrapper.value
+
+                if (camera == null) {
+                    prevCamera?.close()
+                    prevCamera = null
+                    cancel()
+                } else if (camera.cameraId != prevCamera?.cameraId) {
+                    prevCamera?.close()
+                    prevCamera = camera
+                    camera.initializeCamera(
+                        context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
+                        surfaceTexture
+                    )
                 }
             }
         }
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        Logging.d("$TAG.onSurfaceChanged")
         GLES20.glViewport(0, 0, width, height)
 
         updateModelMatrix(width.toFloat(), height.toFloat())
@@ -102,11 +116,6 @@ class ArtRenderer(
             isSurfaceUpdated = true
             glSurfaceView.requestRender()
         }
-    }
-
-    fun stopCapture(wrapper: CameraWrapper) {
-        Logging.d("$TAG.stopCapture")
-        wrapper.camera?.close()
     }
 
     private fun drawPreview() {

@@ -71,14 +71,23 @@ class ArtActivity : AppCompatActivity() {
         (glSurfaceView.parent as FrameLayout).addView(menu)
 
         viewModel.menuState.observe(this) { menuState ->
-            when (menuState.lens) {
-                Lens.Back -> swapCamera(LENS_FACING_BACK)
-                Lens.Front -> swapCamera(LENS_FACING_FRONT)
+            menuState.lens.value?.let { lens ->
+                when (lens) {
+                    Lens.Back -> swapCamera(LENS_FACING_BACK)
+                    Lens.Front -> swapCamera(LENS_FACING_FRONT)
+                }
             }
         }
     }
 
+    override fun onStart() {
+        Logging.d("$TAG.onStart")
+        super.onStart()
+        viewModel.onActivityStart()
+    }
+
     override fun onResume() {
+        Logging.d("$TAG.onResume")
         super.onResume()
         if (isRendererSet) {
             glSurfaceView.onResume()
@@ -89,17 +98,27 @@ class ArtActivity : AppCompatActivity() {
      * Управляем thread'ом glSurfaceView
      */
     override fun onPause() {
+        Logging.d("$TAG.onPause")
         super.onPause()
         if (isRendererSet) {
             glSurfaceView.onPause()
         }
     }
 
+    override fun onStop() {
+        Logging.d("$TAG.onStop")
+        super.onStop()
+        cameraState.tryEmit(CameraWrapper(null))
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         cameraThread.quitSafely()
-        // note: надо как-то очищать ресурсы камер
-        renderer.stopCapture(cameraState.value)
+    }
+
+    private fun swapCamera(lens: Int) {
+        Logging.d("$TAG.swapCamera")
+        cameraState.tryEmit(CameraWrapper(fetchCamera(lens)))
     }
 
     private fun fetchCamera(lens: Int): Camera {
@@ -107,11 +126,6 @@ class ArtActivity : AppCompatActivity() {
         val manager = getSystemService(CAMERA_SERVICE) as CameraManager
         val cameraId = getCameraId(manager, lens)
         return Camera(cameraId, manager.getCameraCharacteristics(cameraId), cameraHandler, this)
-    }
-
-    private fun swapCamera(lens: Int) {
-        Logging.d("$TAG.swapCamera")
-        cameraState.tryEmit(CameraWrapper(fetchCamera(lens)))
     }
 
     private fun createSideMenu(): LinearLayout {

@@ -16,7 +16,6 @@ class ArtScreen : Model {
         ElementBuffer(elements)
     )
 
-
     override fun bindAttributes(attributes: List<Attribute>) {
         vertexArray.bind()
         attributes.forEach { attr ->

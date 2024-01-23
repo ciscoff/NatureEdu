@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.PointF
 import android.transition.TransitionManager
 import android.util.AttributeSet
-import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -14,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.children
 import androidx.lifecycle.ViewModelProvider
+import dev.barabu.base.Logging
 import dev.barabu.widgets.domain.Effect
 import dev.barabu.widgets.domain.Form
 import dev.barabu.widgets.domain.Lens
@@ -29,7 +29,7 @@ class MenuView @JvmOverloads constructor(
     private lateinit var menuButtonColored: View
 
     /**
-     * Кнопка и ее иконки для неактивного/активного состояний
+     * Кнопки и их иконки для неактивного/активного состояний
      */
     private val buttonsDecor = mapOf(
         R.id.w_menu_button_colored to arrayOf(R.drawable.w_ic_colored_1, R.drawable.w_ic_colored_2),
@@ -51,7 +51,7 @@ class MenuView @JvmOverloads constructor(
     }
 
     override fun onFinishInflate() {
-        Log.d(TAG, "onFinishInflate")
+        Logging.d("$TAG.onFinishInflate")
         super.onFinishInflate()
 
         menuButtonMain = findViewById<View>(R.id.w_menu_button_main).apply {
@@ -80,33 +80,13 @@ class MenuView @JvmOverloads constructor(
     }
 
     override fun onAttachedToWindow() {
-        Log.d(TAG, "onAttachedToWindow")
+        Logging.d("$TAG.onAttachedToWindow")
         super.onAttachedToWindow()
 
         viewModel.menuState.observe(context as AppCompatActivity) { menuState ->
-            // Угол поворота от layout-позиции элемента, а не от текущего угла поворота
-            when (menuState.lens) {
-                Lens.Back -> {
-                    if (menuButtonMain.rotation != 0f) {
-                        menuButtonMain.animate().rotation(0f).start()
-                    }
-                }
-
-                Lens.Front -> {
-                    if (menuButtonMain.rotation != -180f) {
-                        menuButtonMain.animate().rotation(-180f).start()
-                    }
-                }
-            }
-
-            updateForm(menuState.form)
-
-            val activeButtonId = when (menuState.effect) {
-                Effect.Colored -> R.id.w_menu_button_colored
-                Effect.Grey -> R.id.w_menu_button_grey
-                Effect.Blur -> R.id.w_menu_button_blur
-            }
-            updateButtonsDecor(activeButtonId)
+            handleLensState(menuState.lens.value)
+            handleFormState(menuState.form.value)
+            handleButtonState(menuState.effect.value)
         }
     }
 
@@ -114,7 +94,7 @@ class MenuView @JvmOverloads constructor(
         if (detector.onTouchEvent(event)) true else super.onTouchEvent(event)
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        Log.d(TAG, "onInterceptTouchEvent")
+        Logging.d("$TAG.onInterceptTouchEvent")
         return when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 // Детектор должен сохранить у себя начало жеста
@@ -163,6 +143,42 @@ class MenuView @JvmOverloads constructor(
     }
 
     override fun onSingleTapUp(e: MotionEvent): Boolean = true
+
+    /**
+     * INFO: Угол поворота от layout-позиции элемента, а не от текущего угла поворота
+     */
+    private fun handleLensState(lens: Lens?) {
+        if (lens == null) return
+
+        when (lens) {
+            Lens.Back -> {
+                if (menuButtonMain.rotation != 0f) {
+                    menuButtonMain.animate().rotation(0f).start()
+                }
+            }
+
+            Lens.Front -> {
+                if (menuButtonMain.rotation != -180f) {
+                    menuButtonMain.animate().rotation(-180f).start()
+                }
+            }
+        }
+    }
+
+    private fun handleFormState(form: Form?) {
+        if (form == null) return
+        updateForm(form)
+    }
+
+    private fun handleButtonState(effect: Effect?) {
+        if (effect == null) return
+        val activeButtonId = when (effect) {
+            Effect.Colored -> R.id.w_menu_button_colored
+            Effect.Grey -> R.id.w_menu_button_grey
+            Effect.Blur -> R.id.w_menu_button_blur
+        }
+        updateButtonsDecor(activeButtonId)
+    }
 
     private fun updateForm(form: Form) {
         TransitionManager.beginDelayedTransition(this)
