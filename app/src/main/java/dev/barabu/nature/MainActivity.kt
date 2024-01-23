@@ -6,13 +6,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.WindowCompat
 import androidx.core.widget.NestedScrollView
+import dev.barabu.nature.camera.art.ArtActivity
+import dev.barabu.nature.camera.preview.PreviewActivity
 import dev.barabu.nature.mountains.MountainsActivity
 import dev.barabu.nature.permission.Permission
 import dev.barabu.nature.permission.PermissionManager
 import dev.barabu.nature.sphere.main.ColSphereActivity
 import dev.barabu.nature.sphere.main.TexSphereActivity
 import dev.barabu.nature.sphere.planet.PlanetActivity
-import dev.barabu.nature.video.camera.CameraActivity
 import dev.barabu.nature.video.distortion.VideoDistortionActivity
 
 class MainActivity : BaseActivity() {
@@ -28,7 +29,8 @@ class MainActivity : BaseActivity() {
         TexSphereActivity::class.java to R.string.menu_main_sphere,
         PlanetActivity::class.java to R.string.menu_planet_sphere,
         VideoDistortionActivity::class.java to R.string.menu_cat_killer,
-        CameraActivity::class.java to R.string.menu_camera_preview
+        PreviewActivity::class.java to R.string.menu_camera_preview,
+        ArtActivity::class.java to R.string.menu_camera_art,
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "NatureEdu"
 include(":app")
 include(":app:base")
+include(":app:widgets")

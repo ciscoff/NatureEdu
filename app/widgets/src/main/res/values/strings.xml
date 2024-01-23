@@ -1,0 +1,4 @@
+<resources>
+    <string name="text_view_content">Hello, Dolly</string>
+    <string name="text_view_comment">How are you ?</string>
+</resources>

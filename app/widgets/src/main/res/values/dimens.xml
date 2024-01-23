@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="w_menu_margin_end">20dp</dimen>
+    <dimen name="w_menu_margin_bottom">60dp</dimen>
+
+    <!-- Menu Container -->
+    <dimen name="w_menu_width">54dp</dimen>
+    <dimen name="w_menu_padding">2.0dp</dimen>
+    <dimen name="w_menu_round_rect_radius">27dp</dimen>
+
+    <!-- Menu Buttons -->
+    <dimen name="w_menu_button_main">50dp</dimen>
+    <dimen name="w_menu_button_item">44dp</dimen>
+</resources>

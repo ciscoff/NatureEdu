@@ -8,6 +8,7 @@
     <string name="menu_main_sphere">IcoSphere</string>
     <string name="menu_cat_killer">Cat\'s killer</string>
     <string name="menu_camera_preview">Camera preview</string>
+    <string name="menu_camera_art">Camera Art</string>
 
     <!--  Permissions Request Rationale -->
     <string name="dialog_permission_title">Permission required</string>
