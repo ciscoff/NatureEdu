@@ -1,12 +1,17 @@
 package dev.barabu.widgets
 
+import android.animation.Animator
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.PointF
+import android.transition.ChangeBounds
+import android.transition.Explode
 import android.transition.TransitionManager
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +19,7 @@ import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.children
 import androidx.lifecycle.ViewModelProvider
 import dev.barabu.base.Logging
+import dev.barabu.base.utils.isMiUi
 import dev.barabu.widgets.domain.Effect
 import dev.barabu.widgets.domain.Form
 import dev.barabu.widgets.domain.Lens
@@ -27,6 +33,28 @@ class MenuView @JvmOverloads constructor(
     private lateinit var menuButtonBlur: View
     private lateinit var menuButtonGrey: View
     private lateinit var menuButtonColored: View
+    private lateinit var menuButtonsContainer: ViewGroup
+
+    /**
+     * Минимальная высота панели кнопок
+     */
+    private val menuMinHeight: Int = 0
+
+    /**
+     * Максимальная высота панели кнопок
+     */
+    private val menuMaxHeight: Int by lazy {
+        val buttonsQty =
+            menuButtonsContainer.children.filter { it is ImageView }.count()
+        val buttonsHeight =
+            buttonsQty * resources.getDimensionPixelOffset(R.dimen.w_menu_button_item)
+        val spacerHeight =
+            2 * resources.getDimensionPixelOffset(R.dimen.w_menu_spacer_margin_ver) +
+                    resources.getDimensionPixelOffset(R.dimen.w_menu_spacer_height)
+        buttonsHeight + spacerHeight
+    }
+
+    private var isMenuAnimating = false
 
     /**
      * Кнопки и их иконки для неактивного/активного состояний
@@ -60,21 +88,24 @@ class MenuView @JvmOverloads constructor(
             }
         }
 
-        menuButtonColored = findViewById<View>(R.id.w_menu_button_colored).apply {
-            setOnClickListener {
-                viewModel.onColoredClick()
-            }
-        }
+        menuButtonsContainer = findViewById<ViewGroup?>(R.id.buttons_container).apply {
 
-        menuButtonBlur = findViewById<View>(R.id.w_menu_button_blur).apply {
-            setOnClickListener {
-                viewModel.onBlurClick()
+            menuButtonColored = findViewById<View>(R.id.w_menu_button_colored).apply {
+                setOnClickListener {
+                    viewModel.onColoredClick()
+                }
             }
-        }
 
-        menuButtonGrey = findViewById<View>(R.id.w_menu_button_grey).apply {
-            setOnClickListener {
-                viewModel.onGreyClick()
+            menuButtonBlur = findViewById<View>(R.id.w_menu_button_blur).apply {
+                setOnClickListener {
+                    viewModel.onBlurClick()
+                }
+            }
+
+            menuButtonGrey = findViewById<View>(R.id.w_menu_button_grey).apply {
+                setOnClickListener {
+                    viewModel.onGreyClick()
+                }
             }
         }
     }
@@ -167,7 +198,8 @@ class MenuView @JvmOverloads constructor(
 
     private fun handleFormState(form: Form?) {
         if (form == null) return
-        updateForm(form)
+        /*updateForm(form)*/
+        updateFormV2(form)
     }
 
     private fun handleButtonState(effect: Effect?) {
@@ -180,9 +212,38 @@ class MenuView @JvmOverloads constructor(
         updateButtonsDecor(activeButtonId)
     }
 
-    private fun updateForm(form: Form) {
-        TransitionManager.beginDelayedTransition(this)
-        val visibility = if (form == Form.Expanded) View.VISIBLE else View.GONE
+    /**
+     * Добавил контейнер для кнопок и меняю его высоту аниматором
+     */
+    private fun updateFormV2(form: Form) {
+        if (isMenuAnimating) return
+
+        val (from, to) = if (form == Form.Expanded)
+            (menuMinHeight to menuMaxHeight)
+        else
+            (menuMaxHeight to menuMinHeight)
+        animateMenuTransition(from, to)
+    }
+
+    /**
+     * Отказался от этого варианта из-за Xiaomi. Теперь [updateFormV2]
+     */
+    private fun updateFormV1(form: Form) {
+
+        val (transition, visibility) = if (form == Form.Expanded) {
+            Explode() to View.VISIBLE
+        } else {
+            ChangeBounds() to View.GONE
+        }
+
+        // NOTE: У Xiaomi (MIUI 13+) не работает transition при сворачивании, если под меню
+        //  находится GLSurfaceView. Если обычная View, то все ОК. Поэтому отключаем transition
+        //  для сворачивания, если работаем на MIUI.
+        // NOTE: И вообще transition работает по разному на разных девайсах.
+        if (!(isMiUi && form == Form.Collapsed)) {
+            TransitionManager.beginDelayedTransition(this, transition)
+        }
+
         children.asIterable().forEach {
             if (it.id != R.id.w_menu_button_main) {
                 it.visibility = visibility
@@ -193,16 +254,46 @@ class MenuView @JvmOverloads constructor(
     /**
      * Перерисовать кнопки и выделить активную
      */
-    private fun updateButtonsDecor(activeButton: Int) {
-        children.filter { it is ImageView && it.id != R.id.w_menu_button_main }.forEach { v ->
-            val drawableIndex = if (v.id == activeButton) 1 else 0
-            (v as ImageView).setImageResource(buttonsDecor[v.id]!![drawableIndex])
-        }
+    private fun updateButtonsDecor(activeButtonId: Int) {
+        menuButtonsContainer.children
+            .filter { v ->
+                v is ImageView
+            }.forEach { v ->
+                val drawableIndex = if (v.id == activeButtonId) 1 else 0
+                (v as ImageView).setImageResource(buttonsDecor[v.id]!![drawableIndex])
+            }
+    }
+
+    private fun animateMenuTransition(from: Int, to: Int) {
+        ValueAnimator.ofInt(from, to).apply {
+            duration = ANIMATION_DURATION
+            addUpdateListener { animation ->
+                menuButtonsContainer.layoutParams = menuButtonsContainer.layoutParams.apply {
+                    height = animation.animatedValue as Int
+                }
+            }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator) {
+                    isMenuAnimating = true
+                }
+
+                override fun onAnimationEnd(animation: Animator) {
+                    isMenuAnimating = false
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                }
+
+                override fun onAnimationRepeat(animation: Animator) {
+                }
+            })
+        }.start()
     }
 
     companion object {
         private const val TAG = "MenuView"
 
         private const val SWIPE_THRESHOLD = 10f
+        private const val ANIMATION_DURATION = 180L
     }
 }
