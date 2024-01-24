@@ -1,26 +1,26 @@
-package dev.barabu.widgets
+package dev.barabu.widgets.menu
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import dev.barabu.base.Logging
-import dev.barabu.widgets.domain.Effect
-import dev.barabu.widgets.domain.EffectWrapper
-import dev.barabu.widgets.domain.Form
-import dev.barabu.widgets.domain.FormWrapper
-import dev.barabu.widgets.domain.Lens
-import dev.barabu.widgets.domain.LensWrapper
-import dev.barabu.widgets.domain.MenuState
+import dev.barabu.widgets.menu.domain.Filter
+import dev.barabu.widgets.menu.domain.FilterWrapper
+import dev.barabu.widgets.menu.domain.Form
+import dev.barabu.widgets.menu.domain.FormWrapper
+import dev.barabu.widgets.menu.domain.Lens
+import dev.barabu.widgets.menu.domain.LensWrapper
+import dev.barabu.widgets.menu.domain.MenuState
 import java.util.Collections
 
 class MenuViewModel : ViewModel() {
 
-    private var effect: Effect = Effect.Colored
+    private var filter: Filter = Filter.Colored
     private val lens = arrayListOf(Lens.Back, Lens.Front)
     private var form: Form = Form.Collapsed
 
     private val noLens = LensWrapper(null)
-    private val noEffect = EffectWrapper(null)
+    private val noEffect = FilterWrapper(null)
     private val noForm = FormWrapper(null)
 
     private val _menuState = MutableLiveData(MenuState(noLens, noEffect, noForm))
@@ -28,7 +28,7 @@ class MenuViewModel : ViewModel() {
 
     fun onActivityStart() {
         Logging.d("$TAG.onActivityStart")
-        _menuState.value = MenuState(LensWrapper(lens[0]), EffectWrapper(effect), FormWrapper(form))
+        _menuState.value = MenuState(LensWrapper(lens[0]), FilterWrapper(filter), FormWrapper(form))
     }
 
     fun onSwapClick() {
@@ -39,20 +39,27 @@ class MenuViewModel : ViewModel() {
 
     fun onGrayClick() {
         Logging.d("$TAG.onGreyClick")
-        effect = Effect.Grayscale
-        _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
+        filter = Filter.Grayscale
+        _menuState.value = MenuState(noLens, FilterWrapper(filter), noForm)
     }
+
+    fun onInvertClick() {
+        Logging.d("$TAG.onGreyClick")
+        filter = Filter.Invert
+        _menuState.value = MenuState(noLens, FilterWrapper(filter), noForm)
+    }
+
 
     fun onBlurClick() {
         Logging.d("$TAG.onBlurClick")
-        effect = Effect.Blur
-        _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
+        filter = Filter.Blur
+        _menuState.value = MenuState(noLens, FilterWrapper(filter), noForm)
     }
 
     fun onColoredClick() {
         Logging.d("$TAG.onColoredClick")
-        effect = Effect.Colored
-        _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
+        filter = Filter.Colored
+        _menuState.value = MenuState(noLens, FilterWrapper(filter), noForm)
     }
 
     fun onExpandMenu() {

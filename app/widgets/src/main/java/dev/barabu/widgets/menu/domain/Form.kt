@@ -1,4 +1,4 @@
-package dev.barabu.widgets.domain
+package dev.barabu.widgets.menu.domain
 
 enum class Form {
     Collapsed,

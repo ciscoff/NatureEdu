@@ -3,29 +3,38 @@
 precision mediump float;
 
 uniform samplerExternalOES u_TexUnitVideo;
-uniform int u_Effect;
+uniform int u_Filter;
+
+// Filters ordinals:
+//   Colored: 0
+//   Gray: 1
+//   Invert: 2
+//   Blur: 3
 
 in vec2 v_TextPos;
 out vec4 FragColor;
 
-vec4 grayScaleEffect(vec4 origColor) {
-    vec4 color = texture(u_TexUnitVideo, v_TextPos);
-    float gray = (color.r + color.g + color.b) / 3.0;
+vec4 grayScaleFilter(vec4 origColor) {
+    float gray = (origColor.r + origColor.g + origColor.b) / 3.0;
     return vec4(gray, gray, gray, 1.0);
+}
+
+vec4 invertFilter(vec4 origColor) {
+    return vec4((1.0 - origColor.rgb), 1.0);
 }
 
 void main() {
 
     vec4 color = vec4(1.0);
 
-    switch (u_Effect) {
-        case 1:
-            FragColor = grayScaleEffect(texture(u_TexUnitVideo, v_TextPos));
+    switch (u_Filter) {
+        case 1:  // Grayscale
+            FragColor = grayScaleFilter(texture(u_TexUnitVideo, v_TextPos));
             break;
-        case 2:
-            FragColor = texture(u_TexUnitVideo, v_TextPos);
+        case 2:  // Invert
+            FragColor = invertFilter(texture(u_TexUnitVideo, v_TextPos));
             break;
-        default:
+        default:  // Colored
             FragColor = texture(u_TexUnitVideo, v_TextPos);
     }
 }

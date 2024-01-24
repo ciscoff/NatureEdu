@@ -36,8 +36,8 @@ class ArtProgram(
     private var uStMatrixDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_ST_MATRIX)
 
-    private var uEffectNumDescriptor: Int =
-        GLES20.glGetUniformLocation(programDescriptor, U_EFFECT_NUM)
+    private var uFilterNumDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_FILTER_NUM)
 
     init {
         model.bindAttributes(
@@ -70,14 +70,14 @@ class ArtProgram(
     }
 
     fun bindEffectIntUniform(effectNum: Int) {
-        GLES20.glUniform1i(uEffectNumDescriptor, effectNum)
+        GLES20.glUniform1i(uFilterNumDescriptor, effectNum)
     }
 
     companion object {
         private const val U_TEX_UNIT_VIDEO = "u_TexUnitVideo"
         private const val U_MVP_MATRIX = "u_MvpMatrix"
         private const val U_ST_MATRIX = "u_StMatrix"
-        private const val U_EFFECT_NUM = "u_Effect"
+        private const val U_FILTER_NUM = "u_Filter"
         private const val A_POSITION = "a_Position"
         private const val A_TEX_POSITION = "a_TexPos"
     }

@@ -23,7 +23,7 @@ import dev.barabu.base.Logging
 import dev.barabu.nature.R
 import dev.barabu.nature.camera.art.domain.Camera
 import dev.barabu.nature.camera.art.domain.CameraWrapper
-import dev.barabu.widgets.domain.Effect
+import dev.barabu.widgets.menu.domain.Filter
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +33,10 @@ import kotlinx.coroutines.launch
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
+/**
+ * Post-processing
+ * ref: https://learnopengl.com/Advanced-OpenGL/Framebuffers
+ */
 class ArtRenderer(
     private val glSurfaceView: GLSurfaceView,
     private val cameras: Flow<CameraWrapper>
@@ -49,7 +53,7 @@ class ArtRenderer(
 
     private val stMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
-    private var effectNum = Effect.Colored.ordinal
+    private var filterNum = Filter.Colored.ordinal
 
     private var prevCamera: Camera? = null
 
@@ -120,9 +124,9 @@ class ArtRenderer(
         }
     }
 
-    fun handleEffect(effect: Effect) {
+    fun handleEffect(filter: Filter) {
         Logging.d("$TAG.handleEffect")
-        effectNum = effect.ordinal
+        filterNum = filter.ordinal
     }
 
     private fun drawPreview() {
@@ -131,7 +135,7 @@ class ArtRenderer(
             bindVideoTexUniform(previewTexDescriptor)
             bindStMatrixUniform(stMatrix)
             bindMvpMatrixUniform(modelMatrix)
-            bindEffectIntUniform(effectNum)
+            bindEffectIntUniform(filterNum)
             draw()
         }
     }

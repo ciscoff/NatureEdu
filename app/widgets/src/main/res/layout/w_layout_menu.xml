@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<dev.barabu.widgets.MenuView xmlns:android="http://schemas.android.com/apk/res/android"
+<dev.barabu.widgets.menu.MenuView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/w_menu"
     android:layout_width="@dimen/w_menu_width"
     android:layout_height="wrap_content"
@@ -22,7 +22,13 @@
             android:src="@drawable/w_ic_blur_1" />
 
         <ImageView
-            android:id="@+id/w_menu_button_grey"
+            android:id="@+id/w_menu_button_invert"
+            style="@style/style_menu_button_item"
+            android:contentDescription="@null"
+            android:src="@drawable/w_ic_invert_1" />
+
+        <ImageView
+            android:id="@+id/w_menu_button_gray"
             style="@style/style_menu_button_item"
             android:contentDescription="@null"
             android:src="@drawable/w_ic_grey_1" />
@@ -49,4 +55,4 @@
         android:contentDescription="@null"
         android:src="@drawable/w_ic_camera_swap" />
 
-</dev.barabu.widgets.MenuView>
+</dev.barabu.widgets.menu.MenuView>
