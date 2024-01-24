@@ -104,7 +104,7 @@ class MenuView @JvmOverloads constructor(
 
             menuButtonGrey = findViewById<View>(R.id.w_menu_button_grey).apply {
                 setOnClickListener {
-                    viewModel.onGreyClick()
+                    viewModel.onGrayClick()
                 }
             }
         }
@@ -206,7 +206,7 @@ class MenuView @JvmOverloads constructor(
         if (effect == null) return
         val activeButtonId = when (effect) {
             Effect.Colored -> R.id.w_menu_button_colored
-            Effect.Grey -> R.id.w_menu_button_grey
+            Effect.Grayscale -> R.id.w_menu_button_grey
             Effect.Blur -> R.id.w_menu_button_blur
         }
         updateButtonsDecor(activeButtonId)

@@ -23,6 +23,7 @@ import dev.barabu.base.Logging
 import dev.barabu.nature.R
 import dev.barabu.nature.camera.art.domain.Camera
 import dev.barabu.nature.camera.art.domain.CameraWrapper
+import dev.barabu.widgets.domain.Effect
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +49,7 @@ class ArtRenderer(
 
     private val stMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
+    private var effectNum = Effect.Colored.ordinal
 
     private var prevCamera: Camera? = null
 
@@ -118,12 +120,18 @@ class ArtRenderer(
         }
     }
 
+    fun handleEffect(effect: Effect) {
+        Logging.d("$TAG.handleEffect")
+        effectNum = effect.ordinal
+    }
+
     private fun drawPreview() {
         program.apply {
             useProgram()
             bindVideoTexUniform(previewTexDescriptor)
             bindStMatrixUniform(stMatrix)
             bindMvpMatrixUniform(modelMatrix)
+            bindEffectIntUniform(effectNum)
             draw()
         }
     }
