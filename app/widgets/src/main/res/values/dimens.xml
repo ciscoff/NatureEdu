@@ -8,6 +8,9 @@
     <dimen name="w_menu_min_height">54dp</dimen>
     <dimen name="w_menu_padding">2.0dp</dimen>
     <dimen name="w_menu_round_rect_radius">27dp</dimen>
+    <dimen name="w_menu_spacer_margin_ver">16dp</dimen>
+    <dimen name="w_menu_spacer_margin_hor">3dp</dimen>
+    <dimen name="w_menu_spacer_height">1dp</dimen>
 
     <!-- Menu Buttons -->
     <dimen name="w_menu_button_main">50dp</dimen>

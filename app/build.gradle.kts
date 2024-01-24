@@ -56,6 +56,8 @@ android {
     val signConfigName = "sign"
 
     defaultConfig {
+        readVersions()
+
         applicationId = "dev.barabu.nature"
         minSdk = 28
         targetSdk = 34
@@ -64,7 +66,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        readVersions()
         setProperty("archivesBaseName", "${apkFileName}_${majorNum}.${minorNum}.${buildNum}")
         saveVersions()
     }
