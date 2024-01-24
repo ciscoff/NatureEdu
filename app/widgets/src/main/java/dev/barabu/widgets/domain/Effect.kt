@@ -1,14 +1,7 @@
 package dev.barabu.widgets.domain
 
-sealed class Effect {
-
-    data object Colored : Effect()
-
-    data object Grey : Effect()
-
-    data object Blur : Effect()
-
-    /*object OldTv : Effect()*/
+enum class Effect {
+    Colored, Grayscale, Blur/*, OldTv*/
 }
 
 @JvmInline

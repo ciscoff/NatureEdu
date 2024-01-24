@@ -37,9 +37,9 @@ class MenuViewModel : ViewModel() {
         _menuState.value = MenuState(LensWrapper(lens[0]), noEffect, noForm)
     }
 
-    fun onGreyClick() {
+    fun onGrayClick() {
         Logging.d("$TAG.onGreyClick")
-        effect = Effect.Grey
+        effect = Effect.Grayscale
         _menuState.value = MenuState(noLens, EffectWrapper(effect), noForm)
     }
 

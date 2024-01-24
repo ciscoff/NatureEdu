@@ -21,6 +21,7 @@ import dev.barabu.nature.camera.art.domain.CameraWrapper
 import dev.barabu.nature.camera.art.gl.ArtRenderer
 import dev.barabu.widgets.MenuViewModel
 import dev.barabu.widgets.R
+import dev.barabu.widgets.domain.Effect
 import dev.barabu.widgets.domain.Lens
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -71,12 +72,8 @@ class ArtActivity : AppCompatActivity() {
         (glSurfaceView.parent as FrameLayout).addView(menu)
 
         viewModel.menuState.observe(this) { menuState ->
-            menuState.lens.value?.let { lens ->
-                when (lens) {
-                    Lens.Back -> swapCamera(LENS_FACING_BACK)
-                    Lens.Front -> swapCamera(LENS_FACING_FRONT)
-                }
-            }
+            handleCameraSwap(menuState.lens.value)
+            handleEffect(menuState.effect.value)
         }
     }
 
@@ -114,6 +111,21 @@ class ArtActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraThread.quitSafely()
+    }
+
+    private fun handleEffect(effect: Effect?) {
+        if (effect == null) return
+        glSurfaceView.queueEvent {
+            renderer.handleEffect(effect)
+        }
+    }
+
+    private fun handleCameraSwap(lens: Lens?) {
+        if (lens == null) return
+        when (lens) {
+            Lens.Back -> swapCamera(LENS_FACING_BACK)
+            Lens.Front -> swapCamera(LENS_FACING_FRONT)
+        }
     }
 
     private fun swapCamera(lens: Int) {
