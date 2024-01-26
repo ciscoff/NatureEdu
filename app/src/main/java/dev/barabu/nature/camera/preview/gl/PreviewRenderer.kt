@@ -22,13 +22,20 @@ import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.nature.R
-import dev.barabu.nature.camera.preview.domain.CameraWrapper
+import dev.barabu.nature.camera.Camera
+import dev.barabu.nature.camera.CameraWrapper
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class PreviewRenderer(
     private val glSurfaceView: GLSurfaceView,
-    private val cameraWrapper: CameraWrapper,
+    private val cameras: Flow<CameraWrapper>
 ) : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
     private lateinit var surfaceTexture: SurfaceTexture
@@ -41,6 +48,8 @@ class PreviewRenderer(
     private val stMatrix = FloatArray(16)
     private val projMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
+
+    private var prevCamera: Camera? = null
 
     /**
      * Counter-clockwise угол поворота девайса от своего натурального положения.
@@ -58,10 +67,27 @@ class PreviewRenderer(
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
         program = PreviewProgram(context)
         setupOffScreenGlTexture()
-        cameraWrapper.openCamera(
-            context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
-            surfaceTexture
-        )
+
+        CoroutineScope(Dispatchers.Unconfined + CoroutineExceptionHandler { _, e ->
+            Logging.e(e)
+        }).launch {
+            cameras.collect { wrapper ->
+                val camera = wrapper.value
+
+                if (camera == null) {
+                    prevCamera?.close()
+                    prevCamera = null
+                    cancel()
+                } else if (camera.cameraId != prevCamera?.cameraId) {
+                    prevCamera?.close()
+                    prevCamera = camera
+                    camera.initializeCamera(
+                        context.getSystemService(Context.CAMERA_SERVICE) as CameraManager,
+                        surfaceTexture
+                    )
+                }
+            }
+        }
     }
 
     /**

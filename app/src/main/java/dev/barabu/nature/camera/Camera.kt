@@ -1,4 +1,4 @@
-package dev.barabu.nature.camera.art.domain
+package dev.barabu.nature.camera
 
 import android.annotation.SuppressLint
 import android.graphics.SurfaceTexture

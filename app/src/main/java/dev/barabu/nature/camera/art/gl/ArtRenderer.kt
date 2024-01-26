@@ -21,8 +21,8 @@ import dev.barabu.base.ERROR_CODE
 import dev.barabu.base.INVALID_DESCRIPTOR
 import dev.barabu.base.Logging
 import dev.barabu.nature.R
-import dev.barabu.nature.camera.art.domain.Camera
-import dev.barabu.nature.camera.art.domain.CameraWrapper
+import dev.barabu.nature.camera.Camera
+import dev.barabu.nature.camera.CameraWrapper
 import dev.barabu.widgets.menu.domain.Filter
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope

@@ -16,11 +16,11 @@ import androidx.lifecycle.ViewModelProvider
 import dev.barabu.base.Logging
 import dev.barabu.base.camera.getCameraId
 import dev.barabu.base.extentions.isActualGlEsSupporting
-import dev.barabu.nature.camera.art.domain.Camera
-import dev.barabu.nature.camera.art.domain.CameraWrapper
+import dev.barabu.nature.camera.Camera
+import dev.barabu.nature.camera.CameraWrapper
 import dev.barabu.nature.camera.art.gl.ArtRenderer
-import dev.barabu.widgets.menu.MenuViewModel
 import dev.barabu.widgets.R
+import dev.barabu.widgets.menu.MenuViewModel
 import dev.barabu.widgets.menu.domain.Filter
 import dev.barabu.widgets.menu.domain.Lens
 import kotlinx.coroutines.flow.MutableStateFlow
