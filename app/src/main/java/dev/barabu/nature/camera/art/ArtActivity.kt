@@ -16,13 +16,13 @@ import androidx.lifecycle.ViewModelProvider
 import dev.barabu.base.Logging
 import dev.barabu.base.camera.getCameraId
 import dev.barabu.base.extentions.isActualGlEsSupporting
-import dev.barabu.nature.camera.art.domain.Camera
-import dev.barabu.nature.camera.art.domain.CameraWrapper
+import dev.barabu.nature.camera.Camera
+import dev.barabu.nature.camera.CameraWrapper
 import dev.barabu.nature.camera.art.gl.ArtRenderer
-import dev.barabu.widgets.MenuViewModel
 import dev.barabu.widgets.R
-import dev.barabu.widgets.domain.Effect
-import dev.barabu.widgets.domain.Lens
+import dev.barabu.widgets.menu.MenuViewModel
+import dev.barabu.widgets.menu.domain.Filter
+import dev.barabu.widgets.menu.domain.Lens
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class ArtActivity : AppCompatActivity() {
@@ -113,10 +113,10 @@ class ArtActivity : AppCompatActivity() {
         cameraThread.quitSafely()
     }
 
-    private fun handleEffect(effect: Effect?) {
-        if (effect == null) return
+    private fun handleEffect(filter: Filter?) {
+        if (filter == null) return
         glSurfaceView.queueEvent {
-            renderer.handleEffect(effect)
+            renderer.handleEffect(filter)
         }
     }
 

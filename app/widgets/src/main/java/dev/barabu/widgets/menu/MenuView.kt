@@ -1,4 +1,4 @@
-package dev.barabu.widgets
+package dev.barabu.widgets.menu
 
 import android.animation.Animator
 import android.animation.ValueAnimator
@@ -20,9 +20,10 @@ import androidx.core.view.children
 import androidx.lifecycle.ViewModelProvider
 import dev.barabu.base.Logging
 import dev.barabu.base.utils.isMiUi
-import dev.barabu.widgets.domain.Effect
-import dev.barabu.widgets.domain.Form
-import dev.barabu.widgets.domain.Lens
+import dev.barabu.widgets.R
+import dev.barabu.widgets.menu.domain.Filter
+import dev.barabu.widgets.menu.domain.Form
+import dev.barabu.widgets.menu.domain.Lens
 import kotlin.math.abs
 
 class MenuView @JvmOverloads constructor(
@@ -32,8 +33,9 @@ class MenuView @JvmOverloads constructor(
     private lateinit var menuButtonMain: View
     private lateinit var menuButtonBlur: View
     private lateinit var menuButtonGrey: View
+    private lateinit var menuButtonInvert: View
     private lateinit var menuButtonColored: View
-    private lateinit var menuButtonsContainer: ViewGroup
+    private lateinit var buttonsContainer: ViewGroup
 
     /**
      * Минимальная высота панели кнопок
@@ -44,8 +46,7 @@ class MenuView @JvmOverloads constructor(
      * Максимальная высота панели кнопок
      */
     private val menuMaxHeight: Int by lazy {
-        val buttonsQty =
-            menuButtonsContainer.children.filter { it is ImageView }.count()
+        val buttonsQty = buttonsContainer.children.filter { it is ImageView }.count()
         val buttonsHeight =
             buttonsQty * resources.getDimensionPixelOffset(R.dimen.w_menu_button_item)
         val spacerHeight =
@@ -61,8 +62,9 @@ class MenuView @JvmOverloads constructor(
      */
     private val buttonsDecor = mapOf(
         R.id.w_menu_button_colored to arrayOf(R.drawable.w_ic_colored_1, R.drawable.w_ic_colored_2),
+        R.id.w_menu_button_gray to arrayOf(R.drawable.w_ic_grey_1, R.drawable.w_ic_grey_2),
+        R.id.w_menu_button_invert to arrayOf(R.drawable.w_ic_invert_1, R.drawable.w_ic_invert_2),
         R.id.w_menu_button_blur to arrayOf(R.drawable.w_ic_blur_1, R.drawable.w_ic_blur_2),
-        R.id.w_menu_button_grey to arrayOf(R.drawable.w_ic_grey_1, R.drawable.w_ic_grey_2)
     )
 
     /**
@@ -88,7 +90,7 @@ class MenuView @JvmOverloads constructor(
             }
         }
 
-        menuButtonsContainer = findViewById<ViewGroup?>(R.id.buttons_container).apply {
+        buttonsContainer = findViewById<ViewGroup?>(R.id.buttons_container).apply {
 
             menuButtonColored = findViewById<View>(R.id.w_menu_button_colored).apply {
                 setOnClickListener {
@@ -102,9 +104,15 @@ class MenuView @JvmOverloads constructor(
                 }
             }
 
-            menuButtonGrey = findViewById<View>(R.id.w_menu_button_grey).apply {
+            menuButtonGrey = findViewById<View>(R.id.w_menu_button_gray).apply {
                 setOnClickListener {
                     viewModel.onGrayClick()
+                }
+            }
+
+            menuButtonInvert = findViewById<View>(R.id.w_menu_button_invert).apply {
+                setOnClickListener {
+                    viewModel.onInvertClick()
                 }
             }
         }
@@ -202,12 +210,13 @@ class MenuView @JvmOverloads constructor(
         updateFormV2(form)
     }
 
-    private fun handleButtonState(effect: Effect?) {
-        if (effect == null) return
-        val activeButtonId = when (effect) {
-            Effect.Colored -> R.id.w_menu_button_colored
-            Effect.Grayscale -> R.id.w_menu_button_grey
-            Effect.Blur -> R.id.w_menu_button_blur
+    private fun handleButtonState(filter: Filter?) {
+        if (filter == null) return
+        val activeButtonId = when (filter) {
+            Filter.Colored -> R.id.w_menu_button_colored
+            Filter.Grayscale -> R.id.w_menu_button_gray
+            Filter.Blur -> R.id.w_menu_button_blur
+            Filter.Invert -> R.id.w_menu_button_invert
         }
         updateButtonsDecor(activeButtonId)
     }
@@ -255,7 +264,7 @@ class MenuView @JvmOverloads constructor(
      * Перерисовать кнопки и выделить активную
      */
     private fun updateButtonsDecor(activeButtonId: Int) {
-        menuButtonsContainer.children
+        buttonsContainer.children
             .filter { v ->
                 v is ImageView
             }.forEach { v ->
@@ -268,7 +277,7 @@ class MenuView @JvmOverloads constructor(
         ValueAnimator.ofInt(from, to).apply {
             duration = ANIMATION_DURATION
             addUpdateListener { animation ->
-                menuButtonsContainer.layoutParams = menuButtonsContainer.layoutParams.apply {
+                buttonsContainer.layoutParams = buttonsContainer.layoutParams.apply {
                     height = animation.animatedValue as Int
                 }
             }

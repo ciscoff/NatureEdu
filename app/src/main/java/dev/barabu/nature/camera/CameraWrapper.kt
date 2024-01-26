@@ -1,4 +1,4 @@
-package dev.barabu.nature.camera.art.domain
+package dev.barabu.nature.camera
 
 @JvmInline
 value class CameraWrapper(val value: Camera?)
