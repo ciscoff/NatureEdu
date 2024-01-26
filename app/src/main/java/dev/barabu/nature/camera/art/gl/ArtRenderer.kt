@@ -36,6 +36,9 @@ import javax.microedition.khronos.opengles.GL10
 /**
  * Post-processing
  * ref: https://learnopengl.com/Advanced-OpenGL/Framebuffers
+ *
+ * Blur:
+ * https://learnopengl.com/Advanced-Lighting/Bloom
  */
 class ArtRenderer(
     private val glSurfaceView: GLSurfaceView,
@@ -43,9 +46,8 @@ class ArtRenderer(
 ) : GLSurfaceView.Renderer,
     SurfaceTexture.OnFrameAvailableListener {
 
-    private lateinit var program: ArtProgram
-
     private lateinit var surfaceTexture: SurfaceTexture
+    private lateinit var program: ArtProgram
 
     private var previewTexDescriptor: Int = INVALID_DESCRIPTOR
     private val context = glSurfaceView.context

@@ -31,6 +31,9 @@ class PreviewRenderer(
     private val cameraWrapper: CameraWrapper,
 ) : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
+    private lateinit var surfaceTexture: SurfaceTexture
+    private lateinit var program: PreviewProgram
+
     private var previewTexDescriptor: Int = INVALID_DESCRIPTOR
     private var isSurfaceUpdated = false
     private val context = glSurfaceView.context
@@ -44,11 +47,6 @@ class PreviewRenderer(
      */
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
-
-    /** https://source.android.com/docs/core/graphics/arch-st?hl=en */
-    private lateinit var surfaceTexture: SurfaceTexture
-
-    private lateinit var program: PreviewProgram
 
     /**
      * INFO: не понятно какая именно Surface created, потому что мы сами создаем Surface,
