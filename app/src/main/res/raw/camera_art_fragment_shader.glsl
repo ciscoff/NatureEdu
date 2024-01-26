@@ -5,6 +5,10 @@ precision mediump float;
 uniform samplerExternalOES u_TexUnitVideo;
 uniform int u_Filter;
 
+// Размер маассива должен быть не меньше, чем (2* BLUR_RADIUS + 1) * (2* BLUR_RADIUS + 1)
+uniform float u_BlurKernel[49];
+uniform int u_BlurRadius;
+
 // Filters ordinals:
 //   Colored: 0
 //   Gray: 1
@@ -28,68 +32,28 @@ vec4 invertFilter(vec4 origColor) {
     return vec4((1.0 - origColor.rgb), 1.0);
 }
 
-// Blur усиливается усилением увеличением kernel матрицы. Сетка 3x3 дает слабый результат.
-vec4 blurEffect() {
-    vec3 sampleTex[9];
+// Двухпроходный Blur.
+// Дает низкое качество при малой размернойсти ядра и сильно тормозит при увеличении ядра.
+// Например при ядре 11x11 ацки лагает.
+vec4 twoPassBlur(vec2 pos) {
+    vec3 result = vec3(0.);
 
-    vec3 color = vec3(0.0);
+    float offset = 1. / 400.;
 
-    vec2 offsets[9] = vec2[](
-        vec2(-offset, offset), // top-left
-        vec2(0.0f, offset), // top-center
-        vec2(offset, offset), // top-right
-        vec2(-offset, 0.0f), // center-left
-        vec2(0.0f, 0.0f), // center-center
-        vec2(offset, 0.0f), // center-right
-        vec2(-offset, -offset), // bottom-left
-        vec2(0.0f, -offset), // bottom-center
-        vec2(offset, -offset)  // bottom-right
-    );
+    int kernelDim = 2 * u_BlurRadius + 1;
 
-    float kernel[9] = float[](
-        1.0 / DIV, 1.0 / DIV, 1.0 / DIV,
-        1.0 / DIV, 10.0 / DIV, 1.0 / DIV,
-        1.0 / DIV, 1.0 / DIV, 1.0 / DIV
-    );
+    // генерим цвет
+    for(int i = 0; i < kernelDim; i++) {
+        float ii = float(i) - float(u_BlurRadius);
 
-    for (int i = 0; i < 9; i++) {
-        sampleTex[i] = vec3(texture(u_TexUnitVideo, v_TextPos.st + offsets[i]));
-        color += sampleTex[i] * kernel[i];
-    }
+        for(int j = 0; j < kernelDim; j++) {
+            float jj = float(j) - float(u_BlurRadius);
 
-    return vec4(color, 1.0);
-}
-
-vec4 blurEffect2() {
-
-    vec3 color = vec3(0.0);
-    vec3 sampleTex[25];
-    vec2 offsets[25];
-
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 5; j++) {
-
-            int ii = i - 2;
-            int jj = j - 2;
-
-            offsets[i * 5 + j] = vec2(float(ii) * offset, float(jj) * offset);
+            result += texture(u_TexUnitVideo, pos + vec2(ii * offset, jj * offset)).rgb * u_BlurKernel[i * kernelDim + j];
         }
     }
 
-    float kernel[25] = float[](
-        .00001, .00043, .00171, .00043, .00001,
-        .00043, .02749, .11024, .02749, .00043,
-        .00171, .11024, .44210, .11024, .00171,
-        .00043, .02749, .11024, .02749, .00043,
-        .00001, .00043, .00171, .00043, .00001
-    );
-
-    for (int i = 0; i < 25; i++) {
-        sampleTex[i] = vec3(texture(u_TexUnitVideo, v_TextPos.st + offsets[i]));
-        color += sampleTex[i] * kernel[i];
-    }
-
-    return vec4(color, 1.0);
+    return vec4(result * 0.4, 1.);
 }
 
 void main() {
@@ -103,8 +67,8 @@ void main() {
         case 2:  // Invert
             FragColor = invertFilter(texture(u_TexUnitVideo, v_TextPos));
             break;
-        case 3:
-            FragColor = blurEffect2();
+        case 3:  // Blur
+            FragColor = twoPassBlur(v_TextPos);
             break;
         default:  // Colored
             FragColor = texture(u_TexUnitVideo, v_TextPos);

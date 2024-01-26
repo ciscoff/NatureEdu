@@ -5,15 +5,6 @@ import kotlin.math.PI
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class PointF(val x: Float, val y: Float)
-
-val Float.asString: String
-    get() = "%.8f".format(this)
-
-const val KERNEL_SIZE = 5
-val weight = FloatArray(KERNEL_SIZE * KERNEL_SIZE)
-
-
 /**
  * m - медиана, вокруг которой формируется рассеивание значений
  * d - deviation, показатель рассеивания значений. Чем меньше величина, тем ближе график
@@ -36,6 +27,51 @@ fun gaussian2D(st: PointF, d: Float): Float {
     val p = -0.5 * (st.x * st.x + st.y * st.y) / (d * d)
     return (1.0 / (2 * PI * d * d) * E.pow(p)).toFloat()
 }
+
+class PointF(val x: Float, val y: Float)
+
+class BlurKernel(private val radius: Int, private val deviation: Float = 0.6f) {
+    private val kernelSize = radius * 2 + 1
+
+    fun weight1D(): FloatArray {
+        val weight = FloatArray(kernelSize)
+        val step = (deviation * 6) / kernelSize
+
+        for (i in 0 until kernelSize) {
+            weight[i] = dev.barabu.base.utils.gaussian1D(i * step, deviation)
+        }
+
+        return weight
+    }
+
+    fun weight2D(): FloatArray {
+        val weight = FloatArray(kernelSize * kernelSize)
+
+        val step = (deviation * 6) / kernelSize
+
+        for (i in 0 until kernelSize) {
+            val ii = i.toFloat() - radius
+
+            for (j in 0 until kernelSize) {
+                val jj = j.toFloat() - radius
+
+                weight[i * kernelSize + j] = gaussian2D(
+                    PointF(ii * step, jj * step),
+                    deviation
+                )
+            }
+        }
+
+        return weight
+    }
+}
+
+val Float.asString: String
+    get() = "%.8f".format(this)
+
+const val KERNEL_SIZE = 5
+val weight = FloatArray(KERNEL_SIZE * KERNEL_SIZE)
+
 
 fun weight1D() {
 
@@ -67,12 +103,23 @@ fun weight2D() {
 fun main() {
 
     weight2D()
-
-    for(i in 0 until KERNEL_SIZE) {
+    for (i in 0 until KERNEL_SIZE) {
         for (j in 0 until KERNEL_SIZE) {
             print("${weight[i * KERNEL_SIZE + j].asString} ")
         }
         println()
     }
 
+    println(" *** ")
+
+    val radius = 2
+    val kernelSize = 2 * radius + 1
+
+    val kernel = BlurKernel(radius).weight2D()
+    for (i in 0 until kernelSize) {
+        for (j in 0 until kernelSize) {
+            print("${kernel[i * kernelSize + j].asString} ")
+        }
+        println()
+    }
 }

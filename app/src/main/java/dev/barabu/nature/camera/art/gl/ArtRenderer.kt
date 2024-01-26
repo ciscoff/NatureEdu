@@ -23,6 +23,7 @@ import dev.barabu.base.Logging
 import dev.barabu.nature.R
 import dev.barabu.nature.camera.Camera
 import dev.barabu.nature.camera.CameraWrapper
+import dev.barabu.nature.camera.art.domain.BlurKernel
 import dev.barabu.widgets.menu.domain.Filter
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +59,8 @@ class ArtRenderer(
     private var filterNum = Filter.Colored.ordinal
 
     private var prevCamera: Camera? = null
+
+    private val blurKernel = BlurKernel(BLUR_RADIUS)
 
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
@@ -95,6 +98,8 @@ class ArtRenderer(
                 }
             }
         }
+
+        Logging.d(blurKernel.toString())
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -132,12 +137,18 @@ class ArtRenderer(
     }
 
     private fun drawPreview() {
+
+        val kernelDim = 2 * BLUR_RADIUS + 1
+        val kernelSize = kernelDim * kernelDim
+
         program.apply {
             useProgram()
-            bindVideoTexUniform(previewTexDescriptor)
+            bindOesTexSamplerUniform(previewTexDescriptor)
             bindStMatrixUniform(stMatrix)
             bindMvpMatrixUniform(modelMatrix)
             bindEffectIntUniform(filterNum)
+            bindBlurKernelUniform(blurKernel.gaussian2D(), kernelSize)
+            bindBlurRadiusUniform(BLUR_RADIUS)
             draw()
         }
     }
@@ -219,6 +230,8 @@ class ArtRenderer(
 
     companion object {
         private const val TAG = "ArtRenderer"
+
+        private const val BLUR_RADIUS = 3
 
         private val DISPLAY_ROTATIONS = mapOf(
             Surface.ROTATION_0 to 0,
