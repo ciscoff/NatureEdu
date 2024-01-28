@@ -41,7 +41,7 @@ abstract class ShaderProgram(
      */
     abstract fun draw()
 
-    fun useProgram() {
+    open fun useProgram() {
         glUseProgram(programDescriptor)
     }
 

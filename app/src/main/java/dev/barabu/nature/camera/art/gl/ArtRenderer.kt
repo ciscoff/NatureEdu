@@ -48,7 +48,8 @@ class ArtRenderer(
     SurfaceTexture.OnFrameAvailableListener {
 
     private lateinit var surfaceTexture: SurfaceTexture
-    private lateinit var program: ArtProgram
+    private lateinit var artProgram: ArtProgram
+    private lateinit var blurProgram: BlurProgram
 
     private var previewTexDescriptor: Int = INVALID_DESCRIPTOR
     private val context = glSurfaceView.context
@@ -76,7 +77,8 @@ class ArtRenderer(
 
         GLES20.glClearColor(0f, 1.0f, 0f, 1.0f)
         setupOffScreenGlTexture()
-        program = ArtProgram(context)
+        artProgram = ArtProgram(context)
+        blurProgram = BlurProgram(context)
 
         CoroutineScope(Dispatchers.Unconfined + CoroutineExceptionHandler { _, e ->
             Logging.e(e)
@@ -98,14 +100,13 @@ class ArtRenderer(
                 }
             }
         }
-
-        Logging.d(blurKernel.toString())
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         Logging.d("$TAG.onSurfaceChanged")
         GLES20.glViewport(0, 0, width, height)
 
+        blurProgram.setupFbo(width, height)
         updateModelMatrix(width.toFloat(), height.toFloat())
         updateSurfaceBufferSize(width, height)
     }
@@ -141,15 +142,27 @@ class ArtRenderer(
         val kernelDim = 2 * BLUR_RADIUS + 1
         val kernelSize = kernelDim * kernelDim
 
-        program.apply {
-            useProgram()
-            bindOesTexSamplerUniform(previewTexDescriptor)
-            bindStMatrixUniform(stMatrix)
-            bindMvpMatrixUniform(modelMatrix)
-            bindEffectIntUniform(filterNum)
-            bindBlurKernelUniform(blurKernel.gaussian2D(), kernelSize)
-            bindBlurRadiusUniform(BLUR_RADIUS)
-            draw()
+        if(filterNum == Filter.Blur.ordinal) {
+            blurProgram.apply {
+                useProgram()
+                bindOesTexSamplerUniform(previewTexDescriptor)
+                bindStMatrixUniform(stMatrix)
+                bindMvpMatrixUniform(modelMatrix)
+                draw()
+            }
+
+        } else {
+            artProgram.apply {
+                useProgram()
+                bindOesTexSamplerUniform(previewTexDescriptor)
+                bindStMatrixUniform(stMatrix)
+                bindMvpMatrixUniform(modelMatrix)
+
+                bindEffectIntUniform(filterNum)
+                bindBlurKernelUniform(blurKernel.gaussian2D(), kernelSize)
+                bindBlurRadiusUniform(BLUR_RADIUS)
+                draw()
+            }
         }
     }
 
