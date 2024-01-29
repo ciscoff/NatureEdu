@@ -23,7 +23,6 @@ import dev.barabu.base.Logging
 import dev.barabu.nature.R
 import dev.barabu.nature.camera.Camera
 import dev.barabu.nature.camera.CameraWrapper
-import dev.barabu.nature.camera.art.domain.BlurKernel
 import dev.barabu.widgets.menu.domain.Filter
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -61,7 +60,6 @@ class ArtRenderer(
 
     private var prevCamera: Camera? = null
 
-    private val blurKernel = BlurKernel(BLUR_RADIUS)
 
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
@@ -139,10 +137,7 @@ class ArtRenderer(
 
     private fun drawPreview() {
 
-        val kernelDim = 2 * BLUR_RADIUS + 1
-        val kernelSize = kernelDim * kernelDim
-
-        if(filterNum == Filter.Blur.ordinal) {
+        if (filterNum == Filter.Blur.ordinal) {
             blurProgram.apply {
                 useProgram()
                 bindOesTexSamplerUniform(previewTexDescriptor)
@@ -157,10 +152,7 @@ class ArtRenderer(
                 bindOesTexSamplerUniform(previewTexDescriptor)
                 bindStMatrixUniform(stMatrix)
                 bindMvpMatrixUniform(modelMatrix)
-
                 bindEffectIntUniform(filterNum)
-                bindBlurKernelUniform(blurKernel.gaussian2D(), kernelSize)
-                bindBlurRadiusUniform(BLUR_RADIUS)
                 draw()
             }
         }
