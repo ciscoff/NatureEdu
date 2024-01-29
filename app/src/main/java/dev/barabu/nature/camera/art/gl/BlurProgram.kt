@@ -47,7 +47,7 @@ class BlurProgram(
     context: Context,
     val radius: Int = 8,
     vertexShaderResourceId: Int = R.raw.camera_art_blur_vertex_shader,
-    fragmentShaderResourceId: Int = R.raw.camera_art_blur_fragment_shader,
+    fragmentShaderResourceId: Int = R.raw.camera_art_blur_portrait_fragment_shader,
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
