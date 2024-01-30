@@ -47,7 +47,7 @@ class BlurProgram(
     context: Context,
     val radius: Int = 8,
     vertexShaderResourceId: Int = R.raw.camera_art_blur_vertex_shader,
-    fragmentShaderResourceId: Int = R.raw.camera_art_blur_portrait_fragment_shader,
+    fragmentShaderResourceId: Int = R.raw.camera_art_blur_around_fragment_shader,
 ) : ShaderProgram(
     TextResourceReader.readTexFromResource(context, vertexShaderResourceId),
     TextResourceReader.readTexFromResource(context, fragmentShaderResourceId)
@@ -91,6 +91,10 @@ class BlurProgram(
 
     private var uFirstIterationDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_FIRST_ITERATION)
+
+    // NOTE: Используется в vertex shader
+    private var uLastIterationDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_LAST_ITERATION)
 
     init {
         model.bindAttributes(
@@ -171,6 +175,7 @@ class BlurProgram(
 
         GLES20.glViewport(0, 0, viewPortWidth, viewPortHeight)
 
+        bindLastIterationUniform(false)
         bindBlurKernelUniform(blurKernel.gaussian1D(), radius + 1)
         bindBlurRadiusUniform(radius)
 
@@ -182,6 +187,7 @@ class BlurProgram(
             // На последней итерации рисуем в FBO экрана.
             // И только на последней итерации применяем матрицы к вертексам и текстуре
             if (i == (ITERATIONS - 1)) {
+                bindLastIterationUniform(true)
                 glBindFramebuffer(GL_FRAMEBUFFER, 0)
             } else {
                 glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[if (isHorizontal) 0 else 1])
@@ -227,6 +233,10 @@ class BlurProgram(
         glUniform1i(uFirstIterationDescriptor, if (value) 1 else 0)
     }
 
+    private fun bindLastIterationUniform(value: Boolean) {
+        glUniform1i(uLastIterationDescriptor, if (value) 1 else 0)
+    }
+
     private fun bindBlurKernelUniform(buffer: FloatBuffer, count: Int) {
         glUniform1fv(uBlurKernelDescriptor, count, buffer)
     }
@@ -245,6 +255,7 @@ class BlurProgram(
         private const val U_OES_TEX_SAMPLER = "u_OesTexSampler"
         private const val U_FBO_TEX_SAMPLER = "u_FboTexSampler"
         private const val U_FIRST_ITERATION = "u_FirstIteration"
+        private const val U_LAST_ITERATION = "u_LastIteration"
         private const val U_MVP_MATRIX = "u_MvpMatrix"
         private const val U_ST_MATRIX = "u_StMatrix"
         private const val U_HORIZONTAL = "u_Horizontal"
