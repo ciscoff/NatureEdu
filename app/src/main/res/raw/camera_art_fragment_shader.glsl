@@ -16,8 +16,6 @@ in vec2 v_TextPos;
 out vec4 FragColor;
 
 
-const float DIV = 18.0;
-
 vec4 grayScaleFilter(vec4 origColor) {
     float gray = (origColor.r + origColor.g + origColor.b) / 3.0;
     return vec4(gray, gray, gray, 1.0);

@@ -23,7 +23,6 @@ import dev.barabu.base.Logging
 import dev.barabu.nature.R
 import dev.barabu.nature.camera.Camera
 import dev.barabu.nature.camera.CameraWrapper
-import dev.barabu.nature.camera.art.domain.BlurKernel
 import dev.barabu.widgets.menu.domain.Filter
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -54,6 +53,7 @@ class ArtRenderer(
     private var previewTexDescriptor: Int = INVALID_DESCRIPTOR
     private val context = glSurfaceView.context
     private var isSurfaceUpdated = false
+    private var aspectRatio: Float = 1f
 
     private val stMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
@@ -61,7 +61,6 @@ class ArtRenderer(
 
     private var prevCamera: Camera? = null
 
-    private val blurKernel = BlurKernel(BLUR_RADIUS)
 
     private val displayRotation: Int
         get() = DISPLAY_ROTATIONS[(context as Activity).windowManager.defaultDisplay.rotation]!!
@@ -106,9 +105,13 @@ class ArtRenderer(
         Logging.d("$TAG.onSurfaceChanged")
         GLES20.glViewport(0, 0, width, height)
 
-        blurProgram.setupFbo(width, height)
         updateModelMatrix(width.toFloat(), height.toFloat())
         updateSurfaceBufferSize(width, height)
+
+        blurProgram.apply {
+            setupFbo(width, height)
+            setupOrientation(context.resources.configuration.orientation)
+        }
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -139,15 +142,13 @@ class ArtRenderer(
 
     private fun drawPreview() {
 
-        val kernelDim = 2 * BLUR_RADIUS + 1
-        val kernelSize = kernelDim * kernelDim
-
-        if(filterNum == Filter.Blur.ordinal) {
+        if (filterNum == Filter.Blur.ordinal) {
             blurProgram.apply {
                 useProgram()
                 bindOesTexSamplerUniform(previewTexDescriptor)
                 bindStMatrixUniform(stMatrix)
                 bindMvpMatrixUniform(modelMatrix)
+                bindAspectRatio(aspectRatio)
                 draw()
             }
 
@@ -157,10 +158,7 @@ class ArtRenderer(
                 bindOesTexSamplerUniform(previewTexDescriptor)
                 bindStMatrixUniform(stMatrix)
                 bindMvpMatrixUniform(modelMatrix)
-
                 bindEffectIntUniform(filterNum)
-                bindBlurKernelUniform(blurKernel.gaussian2D(), kernelSize)
-                bindBlurRadiusUniform(BLUR_RADIUS)
                 draw()
             }
         }
@@ -228,12 +226,12 @@ class ArtRenderer(
     private fun scaleModel(width: Float, height: Float) {
         if (height > width) {
             // В вертикальном положении за 1 берем высоту (Y) и скалируем вертексы по ширине (X)
-            val ratio = height / width
-            Matrix.scaleM(modelMatrix, 0, ratio, 1f, 1f)
+            aspectRatio = height / width
+            Matrix.scaleM(modelMatrix, 0, aspectRatio, 1f, 1f)
         } else {
             // В горизонтальном положении за 1 берем ширину (X) и скалируем вертексы по высоте (Y)
-            val ratio = width / height
-            Matrix.scaleM(modelMatrix, 0, 1f, ratio, 1f)
+            aspectRatio = width / height
+            Matrix.scaleM(modelMatrix, 0, 1f, aspectRatio, 1f)
         }
     }
 
@@ -243,8 +241,6 @@ class ArtRenderer(
 
     companion object {
         private const val TAG = "ArtRenderer"
-
-        private const val BLUR_RADIUS = 3
 
         private val DISPLAY_ROTATIONS = mapOf(
             Surface.ROTATION_0 to 0,
