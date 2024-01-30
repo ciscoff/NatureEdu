@@ -1,6 +1,7 @@
 package dev.barabu.nature.camera.art.gl
 
 import android.content.Context
+import android.content.res.Configuration
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLES20.GL_CLAMP_TO_EDGE
@@ -24,6 +25,7 @@ import android.opengl.GLES20.glGenFramebuffers
 import android.opengl.GLES20.glGenTextures
 import android.opengl.GLES20.glTexImage2D
 import android.opengl.GLES20.glTexParameteri
+import android.opengl.GLES20.glUniform1f
 import android.opengl.GLES20.glUniform1fv
 import android.opengl.GLES20.glUniform1i
 import android.opengl.GLES20.glUniformMatrix4fv
@@ -44,8 +46,8 @@ import java.nio.FloatBuffer
  *  радиусом и количеством итераций.
  */
 class BlurProgram(
-    context: Context,
-    val radius: Int = 8,
+    private val context: Context,
+    private val radius: Int = 8,
     vertexShaderResourceId: Int = R.raw.camera_art_blur_vertex_shader,
     fragmentShaderResourceId: Int = R.raw.camera_art_blur_around_fragment_shader,
 ) : ShaderProgram(
@@ -58,6 +60,8 @@ class BlurProgram(
 
     private var viewPortWidth = 0
     private var viewPortHeight = 0
+
+    private var orientation: Int = Configuration.ORIENTATION_PORTRAIT
 
     private val frameBuffers = intArrayOf(INVALID_DESCRIPTOR, INVALID_DESCRIPTOR)
     private val texBuffers = intArrayOf(INVALID_DESCRIPTOR, INVALID_DESCRIPTOR)
@@ -88,6 +92,12 @@ class BlurProgram(
 
     private var uBlurRadiusDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_BLUR_RADIUS)
+
+    private var uPortraitOrientationDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_PORTRAIT_ORIENTATION)
+
+    private var uAspectRatioDescriptor: Int =
+        GLES20.glGetUniformLocation(programDescriptor, U_ASPECT_RATIO)
 
     private var uFirstIterationDescriptor: Int =
         GLES20.glGetUniformLocation(programDescriptor, U_FIRST_ITERATION)
@@ -147,6 +157,10 @@ class BlurProgram(
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
     }
 
+    fun setupOrientation(orientation: Int) {
+        this.orientation = orientation
+    }
+
     /**
      * Первая итерация:
      *  - Берём цвет из самплера GL_TEXTURE_EXTERNAL_OES.
@@ -178,6 +192,7 @@ class BlurProgram(
         bindLastIterationUniform(false)
         bindBlurKernelUniform(blurKernel.gaussian1D(), radius + 1)
         bindBlurRadiusUniform(radius)
+        bindPortraitOrientationUniform(orientation == Configuration.ORIENTATION_PORTRAIT)
 
         for (i in 0 until ITERATIONS) {
             bindFirstIterationUniform(isFirstIteration)
@@ -219,6 +234,10 @@ class BlurProgram(
         glUniformMatrix4fv(uStMatrixDescriptor, 1, false, matrix, 0)
     }
 
+    fun bindAspectRatio(value: Float) {
+        glUniform1f(uAspectRatioDescriptor, value)
+    }
+
     private fun bindFboTexSamplerUniform(textureId: Int) {
         glActiveTexture(GLES20.GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, textureId)
@@ -245,6 +264,10 @@ class BlurProgram(
         glUniform1i(uBlurRadiusDescriptor, radius)
     }
 
+    private fun bindPortraitOrientationUniform(value: Boolean) {
+        glUniform1i(uPortraitOrientationDescriptor, if (value) 1 else 0)
+    }
+
     companion object {
 
         private const val TAG = "BlurProgram"
@@ -261,6 +284,8 @@ class BlurProgram(
         private const val U_HORIZONTAL = "u_Horizontal"
         private const val U_BLUR_KERNEL = "u_BlurKernel"
         private const val U_BLUR_RADIUS = "u_BlurRadius"
+        private const val U_PORTRAIT_ORIENTATION = "u_PortraitOrientation"
+        private const val U_ASPECT_RATIO = "u_AspectRatio"
         private const val A_POSITION = "a_Position"
         private const val A_TEX_POSITION = "a_TexPos"
     }

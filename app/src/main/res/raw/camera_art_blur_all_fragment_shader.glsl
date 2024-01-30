@@ -18,6 +18,13 @@ uniform sampler2D u_FboTexSampler;
 uniform bool u_Horizontal;
 uniform bool u_FirstIteration;
 
+// Здесь не используется (см blur_around)
+uniform bool u_PortraitOrientation;
+
+// Здесь не используется (см blur_around)
+// >= 1.0
+uniform float u_AspectRatio;
+
 // Размер массива должен быть 'u_BlurRadius + 1'. См. параметр radius в BlurProgram.
 uniform float u_BlurKernel[9];
 uniform int u_BlurRadius;

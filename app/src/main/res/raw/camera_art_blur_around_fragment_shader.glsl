@@ -22,6 +22,10 @@ uniform samplerExternalOES u_OesTexSampler;
 uniform sampler2D u_FboTexSampler;
 uniform bool u_Horizontal;
 uniform bool u_FirstIteration;
+uniform bool u_PortraitOrientation;
+
+// >= 1.0
+uniform float u_AspectRatio;
 
 // Размер массива должен быть 'u_BlurRadius + 1'. См. параметр radius в BlurProgram.
 uniform float u_BlurKernel[9];
@@ -89,16 +93,33 @@ vec4 sampleFromFbo(bool isNotBluring) {
     return vec4(result * factor, 1.0);
 }
 
+// см. "Текстура_камеры_вертексы.rtfd"
+//
+// Блюрим сверху и снизу, оставляя центр оригинальным.
+//
+// Координатная система текстуры соответствует координатной системе сенсора. В портретной
+// ориентации телефона широкая сторона сенсора (его ось X) для нас вертикальна. Поэтому для
+// вертикальной ориентации расчет выполняется для v_TextPos.x.
+// В горизонтальной ориентации телефона ось сенсора и ось экрана вертикальны, поэтому
+// используем v_TextPos.y.
+bool isNotBluring() {
+    bool isNotBluring = false;
+    float blurWidth = 0.2;
+
+    if (u_PortraitOrientation) {
+        isNotBluring = v_TextPos.x > blurWidth && v_TextPos.x < (1. - blurWidth);
+    } else {
+        blurWidth = (0.5 * (u_AspectRatio - 1.0) + blurWidth) / u_AspectRatio;
+        isNotBluring = v_TextPos.y > blurWidth && v_TextPos.y < (1. - blurWidth);
+    }
+    return isNotBluring;
+}
+
 void main() {
 
-    // Блюрим сверху и снизу, оставляя центр оригинальным. Здесь используем v_TextPos.x вместо
-    // v_TextPos.y потому что работаем с оригинальным raw-кадром из камеры у которого координатная
-    // система как у сенсора. То есть повернута.
-    bool isNotBluring = v_TextPos.x > 0.2 && v_TextPos.x < 0.8;
-
     if (u_FirstIteration) {
-        FragColor = sampleFromOes(isNotBluring);
+        FragColor = sampleFromOes(isNotBluring());
     } else {
-        FragColor = sampleFromFbo(isNotBluring);
+        FragColor = sampleFromFbo(isNotBluring());
     }
 }
