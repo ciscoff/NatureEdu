@@ -65,8 +65,9 @@ vec4 sampleFromFbo(bool isNotBluring) {
     ivec2 texSize = textureSize(u_FboTexSampler, 0);
     vec2 tex_offset = vec2(1.0 / float(texSize.x), 1.0 / float(texSize.y));
 
+    // NOTE: Если не блюрим, то берем тексел из ОРИГИНАЛА (из OES TEX). Это улучшает качество.
     if (isNotBluring) {
-        result = texture(u_FboTexSampler, v_TextPos).rgb;
+        result = texture(u_OesTexSampler, v_TextPos).rgb;
         factor = 1.;
     } else {
         result = texture(u_FboTexSampler, v_TextPos).rgb * u_BlurKernel[0];
